@@ -1,0 +1,9 @@
+__pycache__
+.swival
+.venv/
+*.egg-info/
+*~
+build/
+dist/
+tmp/
+secret
