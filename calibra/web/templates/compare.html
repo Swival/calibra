@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: Compare{% endblock %}
+
+{% block head %}
+<script src="/static/vendor/plotly-3.4.0.min.js"></script>
+{% endblock %}
+
+{% block nav_right %}
+<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6" data-test="breadcrumb">
+  <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+    <a href="/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-900 dark:text-white">Compare</span>
+  </nav>
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Campaign Comparison</h1>
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 mb-8" data-test="campaign-picker">
+  <div class="flex flex-wrap items-end gap-4">
+    <div>
+      <label class="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Campaign A</label>
+      <select id="select-a" class="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
+        <option value="">Select...</option>
+        {% for name in campaign_names %}
+        <option value="{{ name }}" {% if a == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Campaign B</label>
+      <select id="select-b" class="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
+        <option value="">Select...</option>
+        {% for name in campaign_names %}
+        <option value="{{ name }}" {% if b == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button id="compare-btn" class="rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium transition-colors">Compare</button>
+  </div>
+</div>
+
+{% if error %}
+<div class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-8" data-test="error-message">
+  <p class="text-red-700 dark:text-red-400 font-medium">{{ error }}</p>
+</div>
+{% endif %}
+
+{% if comparison %}
+{% set variants = comparison.variants %}
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8" data-test="summary-tiles">
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Common Variants</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ variants|length }}</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Biggest Improvement</span>
+    {% set best = namespace(val=-999, label='-') %}
+    {% for v in variants %}
+      {% if v.delta_pass > best.val %}
+        {% set best.val = v.delta_pass %}
+        {% set best.label = v.variant %}
+      {% endif %}
+    {% endfor %}
+    <span class="text-2xl font-bold font-mono tabular-nums text-teal-600 dark:text-teal-400">{{ "+%.1f" | format(best.val * 100) if best.val > 0 else "0.0" }}%</span>
+    <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">{{ best.label }}</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Biggest Regression</span>
+    {% set worst = namespace(val=999, label='-') %}
+    {% for v in variants %}
+      {% if v.delta_pass < worst.val %}
+        {% set worst.val = v.delta_pass %}
+        {% set worst.label = v.variant %}
+      {% endif %}
+    {% endfor %}
+    <span class="text-2xl font-bold font-mono tabular-nums text-red-600 dark:text-red-400">{{ "%.1f" | format(worst.val * 100) if worst.val < 0 else "0.0" }}%</span>
+    <span class="block text-xs text-slate-500 dark:text-slate-400 truncate">{{ worst.label }}</span>
+  </div>
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto mb-8" data-test="comparison-table">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 dark:bg-slate-700/50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Variant</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Pass A</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Pass B</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Delta</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Effect Size</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Tokens A</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Tokens B</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+      {% for v in variants %}
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors duration-100">
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white">{{ v.variant }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "%.1f" | format(v.pass_rate_a * 100) }}%</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "%.1f" | format(v.pass_rate_b * 100) }}%</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums {% if v.delta_pass > 0 %}text-teal-600 dark:text-teal-400{% elif v.delta_pass < 0 %}text-red-600 dark:text-red-400{% else %}text-slate-500 dark:text-slate-400{% endif %}" data-test="delta-cell">
+          {{ "+%.1f" | format(v.delta_pass * 100) if v.delta_pass > 0 else "%.1f" | format(v.delta_pass * 100) }}%
+        </td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">
+          {% if v.effect_size is not none %}
+            {{ "%.2f" | format(v.effect_size) }}
+            <span class="text-xs text-slate-500 dark:text-slate-400">({{ v.effect_magnitude }})</span>
+          {% else %}
+            <span class="text-slate-400 dark:text-slate-500">n/a</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "{:,.0f}".format(v.tokens_mean_a) }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "{:,.0f}".format(v.tokens_mean_b) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 mb-8" data-test="delta-chart">
+  <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Pass Rate Delta by Variant</h3>
+  <div id="chart-delta" class="chart-container">
+    <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
+  </div>
+</div>
+
+<script type="application/json" id="comparison-data">{{ comparison_json | safe }}</script>
+
+{% elif not error and not a and not b %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+  <p class="text-slate-500 dark:text-slate-400">Select two campaigns to compare.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('compare-btn').addEventListener('click', function() {
+  var a = document.getElementById('select-a').value;
+  var b = document.getElementById('select-b').value;
+  if (a && b) {
+    window.location.href = '/compare?a=' + encodeURIComponent(a) + '&b=' + encodeURIComponent(b);
+  }
+});
+
+(function() {
+  var dataEl = document.getElementById('comparison-data');
+  if (!dataEl) return;
+  var variants = JSON.parse(dataEl.textContent);
+  if (!variants || variants.length === 0) return;
+
+  var isDark = document.documentElement.classList.contains('dark');
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var gridColor = isDark ? '#334155' : '#e2e8f0';
+  var bgColor = 'rgba(0,0,0,0)';
+
+  var labels = variants.map(function(v) { return v.variant; });
+  var deltas = variants.map(function(v) { return v.delta_pass * 100; });
+  var colors = deltas.map(function(d) { return d >= 0 ? '#0d9488' : '#dc2626'; });
+
+  Plotly.newPlot('chart-delta', [{
+    type: 'bar',
+    orientation: 'h',
+    y: labels,
+    x: deltas,
+    marker: { color: colors },
+    hovertemplate: '%{y}<br>Delta: %{x:+.1f}%<extra></extra>'
+  }], {
+    margin: { l: 140, r: 20, t: 10, b: 40 },
+    xaxis: { title: 'Delta Pass Rate (%)', color: textColor, gridcolor: gridColor, zeroline: true, zerolinecolor: gridColor },
+    yaxis: { color: textColor, automargin: true },
+    paper_bgcolor: bgColor,
+    plot_bgcolor: bgColor,
+    font: { family: 'ui-monospace, monospace', size: 11, color: textColor }
+  }, { displayModeBar: false, responsive: true });
+})();
+</script>
+{% endblock %}

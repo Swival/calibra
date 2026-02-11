@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: Campaigns{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Campaigns</h1>
+    <a href="/compare" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" data-nav="compare-link">Compare</a>
+  </div>
+  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Select a campaign to view results.</p>
+</div>
+
+{% if campaigns %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for c in campaigns %}
+  <a href="/campaign/{{ c.name }}" class="block rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 hover:border-blue-400 dark:hover:border-blue-500 transition-colors duration-150">
+    <div class="flex items-start justify-between">
+      <h2 class="font-semibold text-slate-900 dark:text-white truncate">{{ c.name }}</h2>
+      {% if c.pass_rate is not none %}
+        {% if c.pass_rate >= 0.8 %}
+          <span class="shrink-0 ml-2 inline-flex items-center rounded-full bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 text-xs font-medium text-teal-700 dark:text-teal-400">{{ "%.0f" | format(c.pass_rate * 100) }}%</span>
+        {% elif c.pass_rate >= 0.5 %}
+          <span class="shrink-0 ml-2 inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">{{ "%.0f" | format(c.pass_rate * 100) }}%</span>
+        {% else %}
+          <span class="shrink-0 ml-2 inline-flex items-center rounded-full bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400">{{ "%.0f" | format(c.pass_rate * 100) }}%</span>
+        {% endif %}
+      {% endif %}
+    </div>
+    <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <div>
+        <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Variants</span>
+        <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ c.n_variants }}</span>
+      </div>
+      <div>
+        <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Tasks</span>
+        <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ c.n_tasks }}</span>
+      </div>
+      <div>
+        <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Trials</span>
+        <span class="font-mono font-medium text-slate-700 dark:text-slate-300">{{ c.n_trials }}</span>
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+  <p class="text-slate-500 dark:text-slate-400">No campaigns found. Run <code class="font-mono text-sm bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">calibra analyze</code> first to generate results.</p>
+</div>
+{% endif %}
+{% endblock %}

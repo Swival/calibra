@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Calibra{% endblock %}</title>
+  <script src="/static/vendor/tailwindcss-browser-4.2.1.js"></script>
+  <script src="/static/vendor/htmx-2.0.8.min.js"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-mono: ui-monospace, 'IBM Plex Mono', 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+      --color-pass: #0d9488;
+      --color-warn: #d97706;
+      --color-fail: #dc2626;
+    }
+  </style>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body class="h-full bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+  <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
+    <a href="/" class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Calibra</a>
+    <div class="flex items-center gap-4">
+      {% block nav_right %}{% endblock %}
+      <button id="theme-toggle" class="p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Toggle dark mode">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    const toggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
+    }
+    toggle.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+  </script>
+  <script>
+    document.addEventListener('keydown', function(e) {
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+        if (e.key === 'Escape') { e.target.blur(); }
+        return;
+      }
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+        var el = document.querySelector('[data-shortcut-search]');
+        if (el) { e.preventDefault(); el.focus(); }
+      } else if (e.key === 'Escape') {
+        history.back();
+      }
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

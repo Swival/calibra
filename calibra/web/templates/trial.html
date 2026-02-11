@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: Trial ({{ task }}/{{ variant }}/{{ repeat }}){% endblock %}
+
+{% block nav_right %}
+<a href="/campaign/{{ campaign_name }}/variant/{{ variant }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ variant }}</a>
+<span class="text-slate-300 dark:text-slate-600">/</span>
+<a href="/campaign/{{ campaign_name }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ campaign_name }}</a>
+<span class="text-slate-300 dark:text-slate-600">/</span>
+<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+{% endblock %}
+
+{% block content %}
+{% if error %}
+<div class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-8" data-test="error-message">
+  <p class="text-red-700 dark:text-red-400 font-medium">{{ error }}</p>
+</div>
+{% else %}
+{% set cal = trial.get("calibra", {}) %}
+{% set stats = trial.get("stats", {}) %}
+{% set result = trial.get("result", {}) %}
+{% set outcome = result.get("outcome", "unknown") %}
+
+<div class="mb-6">
+  <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2" data-test="breadcrumb">
+    <a href="/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <span class="mx-1">&rsaquo;</span>
+    <a href="/campaign/{{ campaign_name }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ campaign_name }}</a>
+    <span class="mx-1">&rsaquo;</span>
+    <a href="/campaign/{{ campaign_name }}/variant/{{ variant }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ variant }}</a>
+    <span class="mx-1">&rsaquo;</span>
+    <span class="text-slate-700 dark:text-slate-200">{{ task }}#{{ repeat }}</span>
+  </nav>
+  <div class="flex items-center gap-3">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ task }} / {{ variant }} / {{ repeat }}</h1>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {% if outcome == 'success' %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+      {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}" data-test="outcome-badge">{{ outcome }}</span>
+    {% if cal.get("verified") is true %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" data-test="verified-badge">verified</span>
+    {% elif cal.get("verified") is false %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" data-test="verified-badge">unverified</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8" data-test="kpi-tiles">
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Wall Time</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ "%.1f" | format(cal.get("wall_time_s", 0)|num) }}s</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Turns</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ stats.get("turns", 0) }}</span>
+  </div>
+  {% set token_total = namespace(v=0) %}
+  {% for ev in trial.get("timeline", []) %}
+    {% if ev.get("type") == "llm_call" %}{% set token_total.v = token_total.v + ev.get("prompt_tokens_est", 0)|num %}{% endif %}
+  {% endfor %}
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Tokens</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ token_total.v|int }}</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">LLM Time</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ "%.1f" | format(stats.get("total_llm_time_s", 0)|num) }}s</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Tool Time</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ "%.1f" | format(stats.get("total_tool_time_s", 0)|num) }}s</span>
+  </div>
+</div>
+
+{% set timeline = trial.get("timeline", []) %}
+{% if timeline %}
+<div class="mb-8">
+  <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Timeline</h2>
+  <div class="relative ml-4" data-test="timeline">
+    <div class="absolute left-2 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+    {% for event in timeline %}
+    {% set etype = event.get("type", "unknown") %}
+    <div class="relative pl-8 pb-6" data-test="timeline-event" data-event-type="{{ etype }}">
+      {% if etype == "llm_call" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-slate-400 dark:bg-slate-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm">
+        <span class="font-medium text-slate-700 dark:text-slate-300">LLM Call</span>
+        {% if event.get("duration_s") %}<span class="text-slate-500 dark:text-slate-400 ml-2">{{ "%.1f" | format(event.duration_s|num) }}s</span>{% endif %}
+        {% if event.get("prompt_tokens_est") %}<span class="text-slate-500 dark:text-slate-400 ml-2">{{ event.prompt_tokens_est }} tokens</span>{% endif %}
+        {% if event.get("finish_reason") %}<span class="text-slate-500 dark:text-slate-400 ml-2">({{ event.finish_reason }})</span>{% endif %}
+        {% if event.get("is_retry") %}<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 ml-2">retry</span>{% endif %}
+      </div>
+
+      {% elif etype == "tool_call" %}
+      {% set tool_ok = event.get("succeeded", true) %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full {% if tool_ok %}bg-teal-500{% else %}bg-red-500{% endif %} border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm">
+        <span class="font-medium text-slate-700 dark:text-slate-300">{{ event.get("name", "tool") }}</span>
+        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ml-2
+          {% if tool_ok %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+          {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">{% if tool_ok %}ok{% else %}fail{% endif %}</span>
+        {% if event.get("duration_s") %}<span class="text-slate-500 dark:text-slate-400 ml-2">{{ "%.1f" | format(event.duration_s|num) }}s</span>{% endif %}
+        {% if event.get("arguments") %}
+        <details class="mt-1">
+          <summary class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Arguments</summary>
+          <pre class="mt-1 text-xs bg-slate-50 dark:bg-slate-900 rounded p-2 overflow-x-auto text-slate-600 dark:text-slate-400">{{ event.arguments | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+      </div>
+
+      {% elif etype == "compaction" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm">
+        <span class="font-medium text-amber-700 dark:text-amber-400">Compaction</span>
+        {% if event.get("strategy") %}<span class="text-slate-500 dark:text-slate-400 ml-2">({{ event.strategy }})</span>{% endif %}
+        {% if event.get("tokens_before") and event.get("tokens_after") %}
+        <span class="text-slate-500 dark:text-slate-400 ml-2">{{ event.tokens_before }} → {{ event.tokens_after }} tokens</span>
+        {% endif %}
+      </div>
+
+      {% elif etype == "guardrail" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-purple-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm">
+        <span class="font-medium text-purple-700 dark:text-purple-400">Guardrail</span>
+        {% if event.get("tool") %}<span class="text-slate-500 dark:text-slate-400 ml-2">{{ event.tool }}</span>{% endif %}
+        {% if event.get("level") %}<span class="text-slate-500 dark:text-slate-400 ml-2">({{ event.level }})</span>{% endif %}
+      </div>
+
+      {% elif etype == "truncated_response" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-amber-400 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm text-amber-700 dark:text-amber-400 font-medium">Truncated Response</div>
+
+      {% elif etype == "review" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-blue-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm">
+        <span class="font-medium text-blue-700 dark:text-blue-400">Review</span>
+        {% if event.get("exit_code") is not none %}<span class="text-slate-500 dark:text-slate-400 ml-2">exit code: {{ event.exit_code }}</span>{% endif %}
+        {% if event.get("feedback") %}
+        <details class="mt-1">
+          <summary class="text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Feedback</summary>
+          <pre class="mt-1 text-xs bg-slate-50 dark:bg-slate-900 rounded p-2 overflow-x-auto text-slate-600 dark:text-slate-400">{{ event.feedback }}</pre>
+        </details>
+        {% endif %}
+      </div>
+
+      {% else %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-sm text-slate-500 dark:text-slate-400">{{ etype }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% set settings = trial.get("settings", {}) %}
+{% if settings %}
+<details class="mb-8" data-test="settings-panel">
+  <summary class="text-lg font-semibold text-slate-900 dark:text-white cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Settings</summary>
+  <div class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+      {% for key, value in settings.items() %}
+      <div class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-700">
+        <dt class="font-medium text-slate-700 dark:text-slate-300">{{ key }}</dt>
+        <dd class="font-mono text-slate-500 dark:text-slate-400">{{ value }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </div>
+</details>
+{% endif %}
+
+<details class="mb-8" data-test="raw-json">
+  <summary class="text-lg font-semibold text-slate-900 dark:text-white cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Raw JSON</summary>
+  <pre class="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-mono overflow-x-auto text-slate-600 dark:text-slate-400" id="raw-json-content"></pre>
+</details>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if not error %}
+<script>
+  document.getElementById('raw-json-content').textContent = {{ raw_json | tojson }};
+</script>
+{% endif %}
+{% endblock %}

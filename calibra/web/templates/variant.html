@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: {{ campaign_name }}, {{ label }}{% endblock %}
+
+{% block head %}
+<script src="/static/vendor/plotly-3.4.0.min.js"></script>
+{% endblock %}
+
+{% block nav_right %}
+<a href="/campaign/{{ campaign_name }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ campaign_name }}</a>
+<span class="text-slate-300 dark:text-slate-600">/</span>
+<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2" data-test="breadcrumb">
+    <a href="/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <span class="mx-1">&rsaquo;</span>
+    <a href="/campaign/{{ campaign_name }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ campaign_name }}</a>
+    <span class="mx-1">&rsaquo;</span>
+    <span class="text-slate-700 dark:text-slate-200">{{ label }}</span>
+  </nav>
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white" data-test="variant-label">{{ label }}</h1>
+  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Dimensions: {{ dimensions | join(" / ") }}</p>
+</div>
+
+{% set pr = variant_agg.pass_rate|num %}
+{% set n = variant_agg.n_trials|num %}
+{% set turns_m = variant_agg.turns.mean|default(0)|num %}
+{% set tok_m = variant_agg.prompt_tokens_est.mean|default(0)|num %}
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8" data-test="kpi-tiles">
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Pass Rate</span>
+    <span class="text-2xl font-bold font-mono tabular-nums
+      {% if pr >= 0.8 %}text-teal-600 dark:text-teal-400
+      {% elif pr >= 0.5 %}text-amber-600 dark:text-amber-400
+      {% else %}text-red-600 dark:text-red-400{% endif %}" data-test="kpi-pass-rate">{{ "%.1f" | format(pr * 100) }}%</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Trials</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white" data-test="kpi-trials">{{ n|int }}</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Mean Turns</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white" data-test="kpi-turns">{{ "%.1f" | format(turns_m) }}</span>
+  </div>
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Mean Tokens</span>
+    <span class="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white" data-test="kpi-tokens">{{ "{:,.0f}".format(tok_m) }}</span>
+  </div>
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto mb-8">
+  <table class="w-full text-sm" data-test="per-task-table">
+    <thead class="bg-slate-50 dark:bg-slate-700/50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Task</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Pass Rate</th>
+        <th class="px-4 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Outcomes</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Turns</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Tokens</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Wall Time</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+      {% for ts in task_stats %}
+      {% set tpr = ts.pass_rate %}
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white">{{ ts.task }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums
+          {% if tpr >= 0.8 %}text-teal-600 dark:text-teal-400
+          {% elif tpr >= 0.5 %}text-amber-600 dark:text-amber-400
+          {% else %}text-red-600 dark:text-red-400{% endif %}">{{ "%.0f" | format(tpr * 100) }}%</td>
+        <td class="px-4 py-2 text-center">
+          {% for o in ts.outcomes %}
+          <span class="inline-block w-2 h-2 rounded-full mx-0.5 {% if o == 'success' %}bg-teal-500{% else %}bg-red-500{% endif %}" title="{{ o }}"></span>
+          {% endfor %}
+        </td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ ts.mean_turns }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "{:,.0f}".format(ts.mean_tokens) }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ ts.mean_wall_time }}s</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Turns Distribution by Task</h3>
+    <div id="chart-turns-box" data-test="chart-turns" class="chart-container">
+      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
+    </div>
+  </div>
+  {% if failure_counts %}
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Failure Breakdown</h3>
+    <div id="chart-failures" data-test="chart-failures" class="chart-container">
+      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
+    </div>
+  </div>
+  {% endif %}
+  {% if tool_agg %}
+  <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+    <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Tool Usage</h3>
+    <div id="chart-tools" data-test="chart-tools" class="chart-container">
+      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto mb-8">
+  <h3 class="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
+    Trials{% if task_filter %} (filtered: {{ task_filter }}){% endif %}
+  </h3>
+  {% if not trials %}
+  <div class="p-12 text-center" data-test="empty-trials">
+    <p class="text-slate-500 dark:text-slate-400">No trials found{% if task_filter %} matching task "{{ task_filter }}"{% endif %}.</p>
+  </div>
+  {% else %}
+  <table class="w-full text-sm" data-test="trial-list">
+    <thead class="bg-slate-50 dark:bg-slate-700/50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Task</th>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Repeat</th>
+        <th class="px-4 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Outcome</th>
+        <th class="px-4 py-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Verified</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Turns</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Tokens</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Wall Time</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+      {% for t in trials %}
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer" data-test="trial-row"
+          onclick="window.location.href='/campaign/{{ campaign_name }}/trial/{{ t.task }}/{{ label }}/{{ t.repeat|default(0) }}'">
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white">{{ t.task }}</td>
+        <td class="px-4 py-2 font-mono text-sm text-slate-700 dark:text-slate-300">{{ t.repeat|default(0) }}</td>
+        <td class="px-4 py-2 text-center">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+            {% if t.outcome == 'success' %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+            {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}" data-test="outcome-badge">{{ t.outcome }}</span>
+        </td>
+        <td class="px-4 py-2 text-center">
+          {% if t.verified is true %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400" data-test="verified-badge">pass</span>
+          {% elif t.verified is false %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" data-test="verified-badge">fail</span>
+          {% else %}
+          <span class="text-slate-400">-</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ t.turns }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ t.prompt_tokens_est }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ "%.1f" | format(t.wall_time_s|num) }}s</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="task-stats-data">{{ task_stats_json | safe }}</script>
+<script type="application/json" id="failure-data">{{ failure_json | safe }}</script>
+<script type="application/json" id="tool-data">{{ tool_json | safe }}</script>
+<script>
+(function() {
+  var isDark = document.documentElement.classList.contains('dark');
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var bgColor = 'rgba(0,0,0,0)';
+  var gridColor = isDark ? '#334155' : '#e2e8f0';
+
+  var taskStats = JSON.parse(document.getElementById('task-stats-data').textContent);
+  var failureCounts = JSON.parse(document.getElementById('failure-data').textContent);
+  var toolAgg = JSON.parse(document.getElementById('tool-data').textContent);
+
+  if (taskStats.length > 0) {
+    var boxTraces = taskStats.map(function(ts) {
+      return {
+        type: 'box',
+        y: ts.turns_vals,
+        name: ts.task,
+        boxpoints: 'all',
+        jitter: 0.3,
+        pointpos: -1.8,
+        marker: { size: 4, color: '#3b82f6' }
+      };
+    });
+    Plotly.newPlot('chart-turns-box', boxTraces, {
+      margin: { l: 50, r: 20, t: 10, b: 60 },
+      yaxis: { title: 'Turns', color: textColor, gridcolor: gridColor },
+      xaxis: { color: textColor },
+      paper_bgcolor: bgColor,
+      plot_bgcolor: bgColor,
+      font: { family: 'ui-monospace, monospace', size: 11, color: textColor },
+      showlegend: false
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  var failureEl = document.getElementById('chart-failures');
+  if (failureEl && Object.keys(failureCounts).length > 0) {
+    var labels = Object.keys(failureCounts);
+    var values = labels.map(function(k) { return failureCounts[k]; });
+    var colors = { infra: '#6366f1', provider: '#f59e0b', tool: '#ef4444', timeout: '#8b5cf6', task: '#64748b' };
+    Plotly.newPlot('chart-failures', [{
+      type: 'pie',
+      labels: labels,
+      values: values,
+      marker: { colors: labels.map(function(l) { return colors[l] || '#94a3b8'; }) },
+      textinfo: 'label+value',
+      hovertemplate: '%{label}: %{value}<extra></extra>'
+    }], {
+      margin: { l: 20, r: 20, t: 10, b: 10 },
+      paper_bgcolor: bgColor,
+      font: { family: 'ui-monospace, monospace', size: 11, color: textColor },
+      showlegend: true,
+      legend: { font: { size: 10, color: textColor } }
+    }, { displayModeBar: false, responsive: true });
+  }
+
+  var toolEl = document.getElementById('chart-tools');
+  if (toolEl && Object.keys(toolAgg).length > 0) {
+    var toolNames = Object.keys(toolAgg).sort();
+    Plotly.newPlot('chart-tools', [
+      {
+        type: 'bar',
+        orientation: 'h',
+        y: toolNames,
+        x: toolNames.map(function(n) { return toolAgg[n].succeeded; }),
+        name: 'Succeeded',
+        marker: { color: '#0d9488' }
+      },
+      {
+        type: 'bar',
+        orientation: 'h',
+        y: toolNames,
+        x: toolNames.map(function(n) { return toolAgg[n].failed; }),
+        name: 'Failed',
+        marker: { color: '#dc2626' }
+      }
+    ], {
+      barmode: 'stack',
+      margin: { l: 120, r: 20, t: 10, b: 40 },
+      xaxis: { title: 'Calls', color: textColor, gridcolor: gridColor },
+      yaxis: { color: textColor, automargin: true },
+      paper_bgcolor: bgColor,
+      plot_bgcolor: bgColor,
+      font: { family: 'ui-monospace, monospace', size: 11, color: textColor },
+      legend: { x: 1, xanchor: 'right', y: 1, font: { size: 10, color: textColor } }
+    }, { displayModeBar: false, responsive: true });
+  }
+})();
+</script>
+{% endblock %}

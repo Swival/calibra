@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: {{ campaign_name }}, Task Matrix{% endblock %}
+
+{% block head %}
+<script src="/static/vendor/plotly-3.4.0.min.js"></script>
+{% endblock %}
+
+{% block nav_right %}
+<a href="/campaign/{{ campaign_name }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ campaign_name }}</a>
+<span class="text-slate-300 dark:text-slate-600">/</span>
+<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2" data-test="breadcrumb">
+    <a href="/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <span class="mx-1">&rsaquo;</span>
+    <a href="/campaign/{{ campaign_name }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ campaign_name }}</a>
+    <span class="mx-1">&rsaquo;</span>
+    <span class="text-slate-700 dark:text-slate-200">Task Matrix</span>
+  </nav>
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Task Matrix</h1>
+  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ tasks_list|length }} tasks, {{ variant_labels|length }} variants</p>
+</div>
+
+{% if cells_json != "[]" %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
+  <div id="heatmap" data-test="heatmap-container" class="chart-container-lg">
+    <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
+  </div>
+</div>
+{% else %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center" data-test="empty-heatmap">
+  <p class="text-slate-500 dark:text-slate-400">No task data available.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="cells-data">{{ cells_json | safe }}</script>
+<script>
+(function() {
+  var heatmapEl = document.getElementById('heatmap');
+  if (!heatmapEl) return;
+  var cells = JSON.parse(document.getElementById('cells-data').textContent);
+  var isDark = document.documentElement.classList.contains('dark');
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var bgColor = 'rgba(0,0,0,0)';
+
+  var tasksSet = {}, variantsSet = {};
+  cells.forEach(function(c) { tasksSet[c.task] = 1; variantsSet[c.variant] = 1; });
+  var tasks = Object.keys(tasksSet).sort();
+  var variants = Object.keys(variantsSet).sort();
+
+  var z = [], text = [];
+  tasks.forEach(function(t) {
+    var row = [], textRow = [];
+    variants.forEach(function(v) {
+      var cell = cells.find(function(c) { return c.task === t && c.variant === v; });
+      if (cell) {
+        row.push(cell.pass_rate);
+        textRow.push(t + ' / ' + v + '<br>Pass: ' + cell.passes + '/' + cell.n +
+          ' (' + (cell.pass_rate * 100).toFixed(0) + '%)' +
+          '<br>Turns: ' + cell.mean_turns + '<br>Tokens: ' + cell.mean_tokens);
+      } else {
+        row.push(null);
+        textRow.push('No data');
+      }
+    });
+    z.push(row);
+    text.push(textRow);
+  });
+
+  var campaignName = {{ campaign_name | tojson }};
+
+  Plotly.newPlot('heatmap', [{
+    type: 'heatmap',
+    z: z,
+    x: variants,
+    y: tasks,
+    text: text,
+    hovertemplate: '%{text}<extra></extra>',
+    colorscale: [[0, '#dc2626'], [0.5, '#d97706'], [1, '#0d9488']],
+    zmin: 0, zmax: 1,
+    colorbar: { title: 'Pass Rate', tickformat: '.0%' }
+  }], {
+    margin: { l: 140, r: 20, t: 10, b: 80 },
+    xaxis: { color: textColor, tickangle: -45 },
+    yaxis: { color: textColor, autorange: 'reversed' },
+    paper_bgcolor: bgColor,
+    plot_bgcolor: bgColor,
+    font: { family: 'ui-monospace, monospace', size: 11, color: textColor }
+  }, { displayModeBar: false, responsive: true });
+
+  document.getElementById('heatmap').on('plotly_click', function(data) {
+    if (data.points && data.points.length > 0) {
+      var pt = data.points[0];
+      var variant = pt.x;
+      var task = pt.y;
+      if (variant) {
+        window.location.href = '/campaign/' + encodeURIComponent(campaignName) +
+          '/variant/' + encodeURIComponent(variant) + '?task=' + encodeURIComponent(task);
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}
