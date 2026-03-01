@@ -294,30 +294,35 @@ def _print_results(
     all_metrics: list[TrialMetrics],
     rankings: list[AggregateMetrics],
     front: list[AggregateMetrics],
-    aggregates: list[AggregateMetrics],
     output_dir: Path,
 ):
     """Print a verbose human-readable summary to stdout."""
-    tasks = sorted({m.task for m in all_metrics})
-    variants = sorted({m.variant_label for m in all_metrics})
-    n_passed = sum(1 for m in all_metrics if m.verified is True)
-    n_failed = sum(1 for m in all_metrics if m.verified is False)
-    n_unknown = sum(1 for m in all_metrics if m.verified is None)
+    tasks: set[str] = set()
+    by_task: dict[str, list[TrialMetrics]] = {}
+    by_variant_task: dict[str, dict[str, list[TrialMetrics]]] = {}
+    n_passed = n_failed = n_unknown = 0
+    for m in all_metrics:
+        tasks.add(m.task)
+        by_task.setdefault(m.task, []).append(m)
+        by_variant_task.setdefault(m.variant_label, {}).setdefault(m.task, []).append(m)
+        if m.verified is True:
+            n_passed += 1
+        elif m.verified is False:
+            n_failed += 1
+        else:
+            n_unknown += 1
+    tasks_sorted = sorted(tasks)
+    n_variants = len({m.variant_label for m in all_metrics})
 
     print(f"\n{'=' * 70}")
     print(f"  Campaign: {campaign_name}")
     print(f"{'=' * 70}")
-    print(f"  {len(all_metrics)} trials | {len(variants)} variants | {len(tasks)} tasks")
+    print(f"  {len(all_metrics)} trials | {n_variants} variants | {len(tasks)} tasks")
     print(f"  {n_passed} passed | {n_failed} failed | {n_unknown} unverified")
 
-    # Per-task pass rates
-    by_task: dict[str, list[TrialMetrics]] = {}
-    for m in all_metrics:
-        by_task.setdefault(m.task, []).append(m)
-
     print("\n  Tasks:")
-    max_task_len = max(len(t) for t in tasks) if tasks else 0
-    for task in tasks:
+    max_task_len = max(len(t) for t in tasks_sorted) if tasks_sorted else 0
+    for task in tasks_sorted:
         tms = by_task[task]
         passed = sum(1 for m in tms if m.verified is True)
         total = len(tms)
@@ -346,30 +351,21 @@ def _print_results(
 
     # Per-variant task breakdown
     print("\n  Pass/fail by variant and task:")
-    task_col_width = max(3, *(len(t) for t in tasks)) if tasks else 3
-    # Header
+    task_col_width = max(3, *(len(t) for t in tasks_sorted)) if tasks_sorted else 3
     var_col = " " * max_var_len
     header_parts = [f"    {var_col}  "]
-    for t in tasks:
+    for t in tasks_sorted:
         header_parts.append(f"{t:>{task_col_width}}")
     print("  ".join(header_parts))
-    # Rows
-    by_variant_task: dict[str, dict[str, list[TrialMetrics]]] = {}
-    for m in all_metrics:
-        by_variant_task.setdefault(m.variant_label, {}).setdefault(m.task, []).append(m)
     for a in rankings:
         parts = [f"    {a.variant_label:<{max_var_len}}  "]
         vt = by_variant_task.get(a.variant_label, {})
-        for t in tasks:
+        for t in tasks_sorted:
             tms = vt.get(t, [])
             passed = sum(1 for m in tms if m.verified is True)
             total = len(tms)
             if total == 0:
                 cell = "-"
-            elif passed == total:
-                cell = f"{passed}/{total}"
-            elif passed == 0:
-                cell = f"0/{total}"
             else:
                 cell = f"{passed}/{total}"
             parts.append(f"{cell:>{task_col_width}}")
@@ -395,7 +391,7 @@ def _print_results(
 
     # Warnings
     any_warnings = False
-    for a in aggregates:
+    for a in rankings:
         warnings = flag_instabilities(a)
         if warnings:
             if not any_warnings:
@@ -427,7 +423,7 @@ def _analyze_single(results_dir: Path, output_dir: Path):
     write_summary_md(output_dir, rankings, front, aggregates)
     write_summary_csv(output_dir, aggregates)
 
-    _print_results(results_dir.name, all_metrics, rankings, front, aggregates, output_dir)
+    _print_results(results_dir.name, all_metrics, rankings, front, output_dir)
     return True
 
 

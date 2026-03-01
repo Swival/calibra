@@ -144,6 +144,8 @@ _BLOCKED_SESSION_KEYS = frozenset(
     }
 )
 
+_MODEL_KNOWN_KEYS = frozenset({"provider", "model", "label", "session"})
+
 
 @functools.lru_cache(maxsize=1)
 def _get_session_param_types() -> dict[str, type | tuple]:
@@ -285,7 +287,6 @@ def load_campaign(path: str | Path) -> Campaign:
     models_raw = matrix.get("model", [])
     if not models_raw:
         raise ConfigError("At least one [[matrix.model]] is required")
-    _MODEL_KNOWN_KEYS = {"provider", "model", "label", "session"}
     models = []
     for m in models_raw:
         inline = {k: v for k, v in m.items() if k not in _MODEL_KNOWN_KEYS}
