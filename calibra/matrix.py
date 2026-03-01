@@ -98,6 +98,9 @@ def apply_screening(variants: list[Variant], sampling: SamplingConfig, seed: int
     return variants
 
 
+DIMENSIONS = ("model", "agent_instructions", "skills", "mcp", "environment")
+
+
 def apply_filter(variants: list[Variant], filter_expr: str) -> list[Variant]:
     from calibra.config import ConfigError
 
@@ -106,28 +109,16 @@ def apply_filter(variants: list[Variant], filter_expr: str) -> list[Variant]:
         key, _, value = part.strip().partition("=")
         pairs[key.strip()] = value.strip()
 
-    dim_attr = {
-        "model": lambda v: v.model.label,
-        "agent_instructions": lambda v: v.agent_instructions.label,
-        "skills": lambda v: v.skills.label,
-        "mcp": lambda v: v.mcp.label,
-        "environment": lambda v: v.environment.label,
-    }
-
-    unknown = set(pairs.keys()) - set(dim_attr.keys())
+    unknown = set(pairs.keys()) - set(DIMENSIONS)
     if unknown:
         raise ConfigError(
             f"Unknown filter dimension(s): {', '.join(sorted(unknown))}. "
-            f"Valid dimensions: {', '.join(sorted(dim_attr.keys()))}"
+            f"Valid dimensions: {', '.join(sorted(DIMENSIONS))}"
         )
 
     result = []
     for v in variants:
-        match = True
-        for dim, label in pairs.items():
-            if dim_attr[dim](v) != label:
-                match = False
-                break
-        if match:
+        labels = v.dim_labels()
+        if all(labels[dim] == label for dim, label in pairs.items()):
             result.append(v)
     return result

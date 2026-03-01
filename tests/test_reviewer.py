@@ -542,6 +542,7 @@ class TestWriteTrialReportReviewer:
             wall_time_s=5.0,
             error_message=None,
             attempts=1,
+            reviewer_verdict=True,
         )
         reviewer = ReviewerConfig(command="/usr/bin/true", max_rounds=3)
         campaign = _campaign(reviewer=reviewer)
