@@ -1,0 +1,1 @@
+Write a Python script called `hello.py` that prints "Hello, World!" to stdout.

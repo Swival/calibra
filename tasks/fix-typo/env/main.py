@@ -1,0 +1,1 @@
+pritn("Hello from main!")

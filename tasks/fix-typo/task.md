@@ -1,0 +1,1 @@
+Fix the typo in main.py: 'pritn' should be 'print'.
