@@ -3,18 +3,18 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Calibra — A benchmarking harness for coding agents</title>
-		<meta name="description" content="Calibra runs structured experiments to evaluate coding agents across models, instructions, skills, MCP servers, and environments. Reproducible results without manual bookkeeping.">
+		<title>Calibra — Stop guessing which models and settings are best. Measure them.</title>
+		<meta name="description" content="Free, open-source benchmarking for coding agents. Test models, prompts, skills, and MCP servers — side by side, at scale.">
 
 		<meta property="og:type" content="website">
-		<meta property="og:title" content="Calibra — A benchmarking harness for coding agents">
-		<meta property="og:description" content="Run structured experiments to evaluate coding agents across models, instructions, skills, and environments.">
+		<meta property="og:title" content="Calibra — Benchmarking for coding agents">
+		<meta property="og:description" content="Free, open-source benchmarking for coding agents. Test models, prompts, skills, and MCP servers — side by side, at scale.">
 		<meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
 		<meta property="og:url" content="https://swival.github.io/calibra/">
 
 		<meta name="twitter:card" content="summary">
-		<meta name="twitter:title" content="Calibra — A benchmarking harness for coding agents">
-		<meta name="twitter:description" content="Run structured experiments to evaluate coding agents across models, instructions, skills, and environments.">
+		<meta name="twitter:title" content="Calibra — Benchmarking for coding agents">
+		<meta name="twitter:description" content="Free, open-source benchmarking for coding agents. Test models, prompts, skills, and MCP servers — side by side, at scale.">
 		<meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
 
 		<link rel="icon" href="favicon.ico">
@@ -35,14 +35,17 @@
 
 		<main>
 			<section class="hero">
-				<h1>A benchmarking harness for coding agents</h1>
+				<h1>Stop guessing which models and settings are best. Measure them.</h1>
 				<p class="tagline">
-					Calibra runs structured experiments to evaluate coding agents across
-					models, instructions, skills, MCP servers, and environments.
-					Define a matrix, run every combination, get reproducible statistical
-					reports.
+					Free, open-source benchmarking for coding agents.<br>
+					Test models, prompts, skills, and MCP servers &mdash; side by side, at scale.
+				</p>
+				<p class="tagline">
+					Works with any provider: Anthropic, OpenAI, or your own self-hosted models
+					via LM Studio, Ollama, or any OpenAI-compatible endpoint.
+					Run thousands of evaluations against local models for free.
 					<br>
-					Built for <a href="https://swival.dev">Swival</a>. Free and open source.
+					Built for <a href="https://swival.dev">Swival</a>.
 				</p>
 				<div class="terminal">
 					<div class="terminal-titlebar">
@@ -54,6 +57,7 @@
 						<div><span class="prompt">$ </span><span class="cmd">uv sync</span></div>
 						<div><span class="prompt">$ </span><span class="cmd">calibra run experiments/model-shootout.toml --workers 4</span></div>
 						<div><span class="prompt">$ </span><span class="cmd">calibra analyze results/model-shootout</span></div>
+						<div><span class="prompt">$ </span><span class="cmd">calibra web serve results/ --open</span></div>
 					</div>
 				</div>
 			</section>
@@ -61,41 +65,105 @@
 			<section class="features">
 				<div class="features-inner">
 					<h2>Why Calibra</h2>
+					<p style="text-align:center; max-width:40rem; margin:0 auto 2rem; color:#555; font-size:0.95rem;">
+						Switching models? Adding an MCP server? Changing your agent's system prompt?
+						You need to know if that actually made things better. Calibra gives you a
+						controlled experiment instead of a gut feeling.
+					</p>
 					<div class="features-grid">
 						<div class="feature-card">
-							<h3>Matrix-driven experiments</h3>
-							<p>Define five dimensions (model, agent instructions,
-								skills, MCP, environment) and Calibra tests every
-								combination. Constraints exclude bad combos, sampling
-								modes manage scale.</p>
+							<h3>Five-dimensional testing</h3>
+							<p>Vary model, agent instructions, skills, MCP servers, and
+								environment in any combination. Calibra runs the full
+								matrix automatically.</p>
 						</div>
 						<div class="feature-card">
-							<h3>Failure classification and retry</h3>
-							<p>Five failure classes (infra, provider, tool, timeout,
-								task) with independent retry limits and exponential
-								backoff. Provider rate limits get retried automatically;
-								wrong answers don't.</p>
+							<h3>Statistically rigorous</h3>
+							<p>Repeat trials, confidence intervals, Pareto fronts,
+								effect sizes. Not just "it seemed faster."</p>
 						</div>
 						<div class="feature-card">
-							<h3>Statistical analysis</h3>
-							<p>Per-variant aggregation with mean, median, standard
-								deviation, p90, 95% confidence intervals. Variant
-								ranking, Pareto front (pass rate vs. token cost),
-								and instability detection.</p>
+							<h3>Works with open models</h3>
+							<p>Bring your own LM Studio, Ollama, or any
+								OpenAI-compatible endpoint. Run thousands of evals
+								for zero API cost.</p>
 						</div>
 						<div class="feature-card">
-							<h3>Web dashboard</h3>
-							<p>An interactive FastAPI + HTMX dashboard for browsing
-								campaigns, drilling into variants and trials, viewing
-								heatmaps, and comparing runs. Also exports to static
-								HTML.</p>
+							<h3>Completely free and open source</h3>
+							<p>No license keys, no usage limits, no telemetry.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="features">
+				<div class="features-inner">
+					<h2>The Web Dashboard</h2>
+					<div class="features-grid">
+						<div class="feature-card">
+							<h3>Campaign overview</h3>
+							<p>See pass rates, variant counts, and trial totals at a glance.
+								KPI tiles highlight what matters: median turns, failure rate,
+								token efficiency.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Variant rankings</h3>
+							<p>A sortable, filterable table ranked by pass rate, token cost,
+								and speed. Instantly spot which model + skill + MCP combo wins.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Task heatmap</h3>
+							<p>A full matrix of tasks vs. variants, colored from red to teal.
+								Click any cell to drill into that specific combination.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Trial inspector</h3>
+							<p>A full chronological timeline of a single trial: every LLM call,
+								every tool invocation, compactions, guardrail interventions,
+								and reviewer feedback.</p>
+						</div>
+					</div>
+					<p style="text-align:center; margin-top:1.5rem; color:#555; font-size:0.9rem;">
+						Dark mode included. The whole thing exports to static HTML &mdash;
+						share results without running a server.
+					</p>
+				</div>
+			</section>
+
+			<section class="features">
+				<div class="features-inner">
+					<h2>Features</h2>
+					<div class="features-grid">
+						<div class="feature-card">
+							<h3>Failure classification and smart retries</h3>
+							<p>Every failure is classified into one of five categories &mdash;
+								infra, provider, tool, timeout, or task &mdash; each with
+								independent retry limits and exponential backoff. Rate limits
+								get retried automatically. Wrong answers don't.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Budget tracking</h3>
+							<p>Set token or dollar limits. Calibra cancels remaining trials
+								when the budget is exceeded. Resume later with
+								<code>--resume</code> and pick up right where you left off.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Campaign comparison</h3>
+							<p>Compare two runs side by side. See pass rate deltas and
+								Cliff's delta effect sizes across every common variant.
+								Find out if that prompt change actually helped.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Reproducibility</h3>
+							<p>Every trial gets a deterministic seed derived from the campaign
+								seed, task, variant, and repeat index. Same config, same results.</p>
 						</div>
 					</div>
 				</div>
 			</section>
 
 			<section class="quickstart">
-				<h2>Quickstart</h2>
+				<h2>Quick Start</h2>
 				<ol>
 					<li>
 						Install Calibra:
@@ -131,21 +199,46 @@ provider = "anthropic"
 model = "claude-sonnet-4.6"
 label = "sonnet"
 
+[[matrix.model]]
+provider = "lmstudio"
+model = "qwen3.5-27b"
+label = "qwen3.5-local"
+base_url = "http://localhost:1234"
+
 [[matrix.agent_instructions]]
 label = "default"
 agents_md = "AGENTS.md"</code></pre>
 					</li>
 					<li>
-						Validate and run:
-						<pre><code>calibra validate experiments/first.toml
-calibra run experiments/first.toml --workers 2</code></pre>
-					</li>
-					<li>
-						Analyze results:
-						<pre><code>calibra analyze results/first
-calibra web serve results/ --open</code></pre>
+						Run it:
+						<pre><code>uv run calibra run experiments/first.toml --workers 4
+uv run calibra analyze results/first
+uv run calibra web serve results/ --open</code></pre>
 					</li>
 				</ol>
+			</section>
+
+			<section class="quickstart">
+				<h2>CLI Reference</h2>
+				<pre><code>calibra validate &lt;config&gt;              # check config without running
+calibra run &lt;config&gt; [--workers N]     # run trials in parallel
+                     [--resume]        # skip completed trials
+                     [--filter EXPR]   # limit variants at runtime
+                     [--dry-run]       # show plan without executing
+calibra analyze &lt;results_dir&gt;          # aggregate metrics and write reports
+calibra show &lt;report.json&gt;             # inspect a single trial
+calibra compare &lt;dir_a&gt; &lt;dir_b&gt;        # side-by-side comparison
+calibra web serve &lt;results_dir&gt;        # launch interactive dashboard
+calibra web build &lt;results_dir&gt;        # export static HTML</code></pre>
+			</section>
+
+			<section class="quickstart">
+				<h2>Task Format</h2>
+				<pre><code>tasks/my-task/
+  task.md       # prompt sent to the agent (required)
+  env/          # starter workspace files (required)
+  verify.sh     # exit-code pass/fail check (optional)
+  meta.toml     # arbitrary metadata (optional)</code></pre>
 			</section>
 		</main>
 
