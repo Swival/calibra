@@ -72,6 +72,7 @@ def cmd_run(args):
         resume=args.resume,
         keep_workdirs=args.keep_workdirs,
         config_path=args.config,
+        verbose=args.verbose,
     )
 
 
@@ -141,6 +142,7 @@ def main(argv=None):
     p_run.add_argument(
         "--keep-workdirs", action="store_true", help="Keep trial working directories"
     )
+    p_run.add_argument("-v", "--verbose", action="store_true", help="Show detailed trial output")
 
     # analyze
     p_ana = sub.add_parser("analyze", help="Analyze campaign results")

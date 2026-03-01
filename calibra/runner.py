@@ -77,6 +77,7 @@ class TrialResult:
     wall_time_s: float
     error_message: str | None
     attempts: int
+    stderr_capture: str | None = None
 
 
 def compute_trial_seed(base_seed: int, task_name: str, variant_label: str, repeat: int) -> int:
@@ -289,6 +290,7 @@ def run_single_trial(
     *,
     keep_workdirs: bool = False,
     merged_session_opts: dict | None = None,
+    verbose: bool = False,
 ) -> TrialResult:
     tmpdir = setup_workspace(spec, spec.variant)
     start = time.monotonic()
@@ -306,6 +308,8 @@ def run_single_trial(
         skills_dir = spec.variant.skills.skills_dirs or None
 
         yolo, session_opts = _resolve_yolo(merged_session_opts or {})
+        if verbose:
+            session_opts["verbose"] = True
 
         session = Session(
             base_dir=str(tmpdir),
@@ -383,6 +387,7 @@ def run_trial_cli(
     *,
     keep_workdirs: bool = False,
     merged_session_opts: dict | None = None,
+    verbose: bool = False,
 ) -> TrialResult:
     tmpdir = setup_workspace(spec, spec.variant)
     start = time.monotonic()
@@ -408,7 +413,7 @@ def run_trial_cli(
             str(campaign.max_turns),
             "--seed",
             str(spec.trial_seed),
-            "--quiet",
+            *([] if verbose else ["--quiet"]),
             "--no-history",
             "--report",
             str(report_path),
@@ -475,6 +480,7 @@ def run_trial_cli(
             wall_time_s=round(wall_time, 3),
             error_message=stderr_text if failure_class else None,
             attempts=1,
+            stderr_capture=stderr_text or None,
         )
 
     except Exception as e:
@@ -502,6 +508,7 @@ def _run_trial_impl(
     *,
     keep_workdirs: bool = False,
     merged_session_opts: dict | None = None,
+    verbose: bool = False,
 ) -> TrialResult:
     if campaign.reviewer:
         return run_trial_cli(
@@ -509,12 +516,14 @@ def _run_trial_impl(
             campaign,
             keep_workdirs=keep_workdirs,
             merged_session_opts=merged_session_opts,
+            verbose=verbose,
         )
     return run_single_trial(
         spec,
         campaign,
         keep_workdirs=keep_workdirs,
         merged_session_opts=merged_session_opts,
+        verbose=verbose,
     )
 
 
@@ -524,6 +533,7 @@ def run_trial_with_retry(
     *,
     keep_workdirs: bool = False,
     merged_session_opts: dict | None = None,
+    verbose: bool = False,
 ) -> TrialResult:
     attempts: list[TrialResult] = []
 
@@ -541,6 +551,7 @@ def run_trial_with_retry(
             campaign,
             keep_workdirs=keep_workdirs,
             merged_session_opts=merged_session_opts,
+            verbose=verbose,
         )
         attempts.append(result)
 
@@ -604,6 +615,7 @@ def run_campaign(
     resume: bool = False,
     keep_workdirs: bool = False,
     config_path: str | None = None,
+    verbose: bool = False,
 ):
     from calibra.budget import BudgetTracker
 
@@ -626,7 +638,15 @@ def run_campaign(
         _validate_merged_options(opts, model_variants)
         merged_session_opts[model.label] = opts
 
-    print(f"Running {len(specs)} trials with {workers} worker(s)...")
+    from calibra.verbose import format_progress_header, format_trial_detail, format_trial_line
+
+    print(format_progress_header(len(specs), workers, verbose))
+
+    trial_verbose = verbose and workers == 1
+    _print_lock = threading.Lock()
+    completed_count = 0
+    passed_count = 0
+    failed_count = 0
 
     from calibra.prices import load_prices, validate_price_coverage
 
@@ -647,6 +667,7 @@ def run_campaign(
                 campaign,
                 keep_workdirs=keep_workdirs,
                 merged_session_opts=merged_session_opts.get(spec.variant.model.label),
+                verbose=trial_verbose,
             ): spec
             for spec in specs
         }
@@ -659,9 +680,37 @@ def run_campaign(
             write_trial_report(out, result, campaign)
 
             status = "PASS" if result.failure_class is None else result.failure_class.upper()
-            print(
-                f"  [{status}] {result.spec.task.name} / {result.spec.variant.label} #{result.spec.repeat_index}"
-            )
+            with _print_lock:
+                completed_count += 1
+                if result.failure_class is None:
+                    passed_count += 1
+                else:
+                    failed_count += 1
+
+                if verbose:
+                    print(
+                        format_trial_line(
+                            status,
+                            result.spec.task.name,
+                            result.spec.variant.label,
+                            result.spec.repeat_index,
+                            result.wall_time_s,
+                            result.report,
+                            completed_count,
+                            len(specs),
+                            passed_count,
+                            failed_count,
+                        )
+                    )
+                    detail = format_trial_detail(result.report, result.stderr_capture)
+                    if detail:
+                        print(detail)
+                else:
+                    print(
+                        f"  [{status}] {result.spec.task.name}"
+                        f" / {result.spec.variant.label}"
+                        f" #{result.spec.repeat_index}"
+                    )
 
             if not budget_exceeded and budget_tracker.update(result):
                 budget_exceeded = True

@@ -289,7 +289,7 @@ def test_resolve_yolo_does_not_mutate_input():
     assert "yolo" in original
 
 
-def _run_with_mock_session(tmp_path, merged_session_opts):
+def _run_with_mock_session(tmp_path, merged_session_opts, verbose=False):
     task = _task(tmp_path)
     spec = TrialSpec(task=task, variant=_variant(), repeat_index=0, trial_seed=42)
     with patch("swival.Session") as mock_session_cls:
@@ -302,7 +302,11 @@ def _run_with_mock_session(tmp_path, merged_session_opts):
         mock_session.run.return_value = mock_result
 
         run_single_trial(
-            spec, _campaign(), keep_workdirs=False, merged_session_opts=merged_session_opts
+            spec,
+            _campaign(),
+            keep_workdirs=False,
+            merged_session_opts=merged_session_opts,
+            verbose=verbose,
         )
         _, kwargs = mock_session_cls.call_args
     return kwargs
@@ -336,3 +340,13 @@ def test_session_receives_merged_opts(tmp_path):
     assert kwargs["temperature"] == 0.5
     assert kwargs["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
     assert kwargs["yolo"] is True
+
+
+def test_verbose_true_injects_verbose_into_session(tmp_path):
+    kwargs = _run_with_mock_session(tmp_path, {}, verbose=True)
+    assert kwargs["verbose"] is True
+
+
+def test_default_no_verbose_in_session(tmp_path):
+    kwargs = _run_with_mock_session(tmp_path, {})
+    assert "verbose" not in kwargs
