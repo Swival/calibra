@@ -137,16 +137,16 @@ calibra web build <results_dir>              # static HTML export
 
 ## Documentation
 
-- [Quick Start](docs/quickstart.md) -- first campaign in a few minutes
-- [Writing Tasks](docs/tasks.md) -- prompts, starter files, verification
+- [Quick Start](docs.md/quickstart.md) -- first campaign in a few minutes
+- [Writing Tasks](docs.md/tasks.md) -- prompts, starter files, verification
   scripts
-- [Campaign Configuration](docs/configuration.md) -- full TOML reference for
+- [Campaign Configuration](docs.md/configuration.md) -- full TOML reference for
   all sections and dimensions
-- [Running Campaigns](docs/running.md) -- parallel execution, filtering,
+- [Running Campaigns](docs.md/running.md) -- parallel execution, filtering,
   resumption
-- [Analyzing Results](docs/analysis.md) -- metrics, rankings, reports
-- [Web Dashboard](docs/web-dashboard.md) -- interactive browsing and static
+- [Analyzing Results](docs.md/analysis.md) -- metrics, rankings, reports
+- [Web Dashboard](docs.md/web-dashboard.md) -- interactive browsing and static
   export
-- [Advanced Topics](docs/advanced.md) -- constraints, sampling, budgets,
+- [Advanced Topics](docs.md/advanced.md) -- constraints, sampling, budgets,
   retries, comparisons, seed determinism
-- [CLI Reference](docs/cli-reference.md) -- every command and flag
+- [CLI Reference](docs.md/cli-reference.md) -- every command and flag

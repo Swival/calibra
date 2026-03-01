@@ -161,7 +161,7 @@ calibra web build <results_dir> [--output DIR]
 | `--output DIR` | `dist/` | Output directory for static HTML |
 
 ```bash
-uv run calibra web build results/ --output docs/dashboard/
+uv run calibra web build results/ --output docs.md/dashboard/
 ```
 
 ---
