@@ -101,6 +101,26 @@ agents_md = "agents.md"
         load_campaign(config)
 
 
+def test_model_optional(tmp_path):
+    toml = """\
+[campaign]
+name = "test"
+tasks_dir = "tasks"
+
+[[matrix.model]]
+provider = "lmstudio"
+label = "local"
+
+[[matrix.agent_instructions]]
+label = "d"
+agents_md = "agents.md"
+"""
+    config = _write_campaign(tmp_path, toml)
+    campaign = load_campaign(config)
+    assert campaign.models[0].model is None
+    assert campaign.models[0].provider == "lmstudio"
+
+
 def test_no_models(tmp_path):
     toml = """\
 [campaign]

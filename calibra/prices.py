@@ -29,6 +29,8 @@ def load_prices(config_path: Path) -> dict[tuple[str, str], float]:
 def validate_price_coverage(campaign: Campaign, prices: dict[tuple[str, str], float]):
     missing = []
     for m in campaign.models:
+        if m.model is None:
+            continue
         key = (m.provider, m.model)
         if key not in prices:
             missing.append(f"{m.provider}/{m.model}")

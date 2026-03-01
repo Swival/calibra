@@ -311,10 +311,9 @@ def run_single_trial(
         if verbose:
             session_opts["verbose"] = True
 
-        session = Session(
+        session_kwargs = dict(
             base_dir=str(tmpdir),
             provider=spec.variant.model.provider,
-            model=spec.variant.model.model,
             max_turns=campaign.max_turns,
             seed=spec.trial_seed,
             yolo=yolo,
@@ -323,6 +322,10 @@ def run_single_trial(
             mcp_servers=mcp_servers,
             **session_opts,
         )
+        if spec.variant.model.model is not None:
+            session_kwargs["model"] = spec.variant.model.model
+
+        session = Session(**session_kwargs)
 
         container: list = []
         error_container: list = []
@@ -407,8 +410,7 @@ def run_trial_cli(
             str(tmpdir),
             "--provider",
             spec.variant.model.provider,
-            "--model",
-            spec.variant.model.model,
+            *(["--model", spec.variant.model.model] if spec.variant.model.model else []),
             "--max-turns",
             str(campaign.max_turns),
             "--seed",

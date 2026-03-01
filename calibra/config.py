@@ -29,7 +29,7 @@ class ReviewerConfig:
 @dataclass
 class ModelVariant:
     provider: str
-    model: str
+    model: str | None
     label: str
     session_options: dict = field(default_factory=dict)
 
@@ -305,7 +305,7 @@ def load_campaign(path: str | Path) -> Campaign:
         models.append(
             ModelVariant(
                 provider=_require(m, "provider", "[[matrix.model]]"),
-                model=_require(m, "model", "[[matrix.model]]"),
+                model=m.get("model"),
                 label=_require(m, "label", "[[matrix.model]]"),
                 session_options=merged,
             )
