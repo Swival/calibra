@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from calibra.utils import sum_prompt_tokens
+
 
 def _fmt_tokens(n: int | float) -> str:
     if n >= 1000:
@@ -14,7 +16,7 @@ def _extract_stats(report: dict) -> tuple[int, int, int]:
     stats = report.get("stats", {})
     turns = stats.get("turns", 0)
     tool_calls = stats.get("tool_calls_total", 0)
-    total_tokens = sum(e.get("prompt_tokens_est", 0) for e in report.get("timeline", []))
+    total_tokens = sum_prompt_tokens(report)
     return turns, tool_calls, total_tokens
 
 

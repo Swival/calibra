@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from calibra.config import BudgetConfig
+from calibra.utils import sum_prompt_tokens
 
 
 @dataclass
@@ -18,11 +19,7 @@ class BudgetTracker:
 
     def update(self, result) -> bool:
         if result.report:
-            tokens = sum(
-                e.get("prompt_tokens_est", 0)
-                for e in result.report.get("timeline", [])
-                if e.get("type") == "llm_call"
-            )
+            tokens = sum_prompt_tokens(result.report)
             self.cumulative_tokens += tokens
 
             model = result.spec.variant.model

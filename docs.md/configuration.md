@@ -176,7 +176,7 @@ Each variant gets a label by joining dimension labels with underscores in a fixe
 
 ## [reviewer] section
 
-Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped — the reviewer determines pass/fail.
+Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped - the reviewer determines pass/fail.
 
 | Field        | Type   | Default    | Description                                              |
 | ------------ | ------ | ---------- | -------------------------------------------------------- |
@@ -189,7 +189,7 @@ command = "./review.sh"
 max_rounds = 3
 ```
 
-The `command` is parsed with `shlex.split`, so arguments with spaces must be quoted. The first token is resolved as an executable (via `which` or relative to the config file directory). If the `[reviewer]` section is present, `command` must be provided — an empty section is an error.
+The `command` is parsed with `shlex.split`, so arguments with spaces must be quoted. The first token is resolved as an executable (via `which` or relative to the config file directory). If the `[reviewer]` section is present, `command` must be provided - an empty section is an error.
 
 Reviewer verdict semantics differ from Swival's defaults for benchmarking purposes:
 - **Accepted** (exit 0): `verified = true`

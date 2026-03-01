@@ -85,7 +85,7 @@ The entire `env/` tree is copied into a temporary directory for each trial, so t
 
 An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
 
-When a campaign has a `[reviewer]` configured, `verify.sh` is skipped — the reviewer determines pass/fail instead. Tasks can include both `verify.sh` and be used with reviewer campaigns; the campaign config controls which verification method is used.
+When a campaign has a `[reviewer]` configured, `verify.sh` is skipped - the reviewer determines pass/fail instead. Tasks can include both `verify.sh` and be used with reviewer campaigns; the campaign config controls which verification method is used.
 
 Make sure the script is executable:
 

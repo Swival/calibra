@@ -121,7 +121,7 @@ When no `[reviewer]` is configured, Calibra creates a Swival session with the va
 
 When a `[reviewer]` is configured, Calibra runs the `swival` CLI as a subprocess instead of using the Session API. This is necessary because the reviewer feature is CLI-only in Swival, and `Session.ask()` returns `report=None` so retry round data would be invisible to metrics and budget tracking.
 
-The CLI invocation includes `--report` (to get the full JSON report with timeline events), `--reviewer` (the reviewer command), `--max-review-rounds`, `--quiet`, `--no-history`, and all session options mapped to their CLI flag equivalents. Swival handles the full reviewer loop internally — initial run plus up to `max_rounds` retry rounds.
+The CLI invocation includes `--report` (to get the full JSON report with timeline events), `--reviewer` (the reviewer command), `--max-review-rounds`, `--quiet`, `--no-history`, and all session options mapped to their CLI flag equivalents. Swival handles the full reviewer loop internally - initial run plus up to `max_rounds` retry rounds.
 
 To prevent user or project config from leaking into trials, Calibra sets `XDG_CONFIG_HOME` to an empty temp directory (preventing `~/.config/swival/config.toml` from loading), deletes any `swival.toml` that may have been copied from the task's `env/` or overlay, and passes `--no-mcp` unless the variant has explicit MCP config.
 

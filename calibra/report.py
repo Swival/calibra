@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import csv
-import json
 from dataclasses import asdict
 from pathlib import Path
 
 from calibra.analyze import AggregateMetrics, TrialMetrics, flag_instabilities
+from calibra.utils import write_json
 
 
 def write_summary_json(
@@ -19,10 +19,7 @@ def write_summary_json(
         "variants": [asdict(a) for a in aggregates],
         "trials": [asdict(m) for m in all_metrics],
     }
-    path = output_dir / "summary.json"
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
+    write_json(output_dir / "summary.json", data)
 
 
 def write_summary_md(

@@ -6,14 +6,14 @@
 
 <p align="center">
 Free, open-source benchmarking for coding agents.<br>
-Test models, prompts, skills, and MCP servers — side by side, at scale.
+Test models, prompts, skills, and MCP servers - side by side, at scale.
 </p>
 
 ---
 
-Calibra is a benchmarking harness that tells you *exactly* how your coding agent performs across models, instructions, skills, MCP servers, and environments. Define a matrix, run it, and get hard numbers — pass rates, token costs, timing, failure breakdowns, and statistical rankings — all in an interactive web dashboard you can share with your team.
+Calibra is a benchmarking harness that tells you *exactly* how your coding agent performs across models, instructions, skills, MCP servers, and environments. Define a matrix, run it, and get hard numbers - pass rates, token costs, timing, failure breakdowns, and statistical rankings - all in an interactive web dashboard you can share with your team.
 
-It works with any provider: Anthropic, OpenAI, or your own self-hosted models via LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evaluations against local models for free.
+It works with any provider: OpenAI, HuggingFace, or your own self-hosted models via LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evaluations against local models for free.
 
 Built for [Swival](https://github.com/swival/swival).
 
@@ -21,30 +21,31 @@ Built for [Swival](https://github.com/swival/swival).
 
 **You're flying blind without it.** Switching models? Adding an MCP server? Changing your agent's system prompt? You need to know if that actually made things better. Calibra gives you a controlled experiment instead of a gut feeling.
 
-- **Five-dimensional testing** — vary model, agent instructions, skills, MCP servers, and environment overlays in any combination. Calibra runs the full matrix automatically.
-- **Statistically rigorous** — repeat trials, confidence intervals, Pareto fronts, effect sizes. Not just "it seemed faster."
-- **Works with open models** — bring your own LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evals for zero API cost.
-- **Completely free and open source** — no license keys, no usage limits, no telemetry.
+- **Five-dimensional testing** - vary model, agent instructions, skills, MCP servers, and environment overlays in any combination. Calibra runs the full matrix automatically.
+- **Statistically rigorous** - repeat trials, confidence intervals, Pareto fronts, effect sizes. Not just "it seemed faster."
+- **Works with open models** - bring your own LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evals for zero API cost.
+- **Your data stays yours** - runs entirely on your machine. No results, prompts, or code are sent to third-party eval platforms.
+- **Completely free and open source** - no license keys, no usage limits, no telemetry.
 
 ## The Web Dashboard
 
 Calibra ships with an interactive dashboard that makes results actually useful.
 
-**Campaign overview** — see pass rates, variant counts, and trial totals at a glance. KPI tiles highlight what matters: median turns, failure rate, token efficiency.
+**Campaign overview** - see pass rates, variant counts, and trial totals at a glance. KPI tiles highlight what matters: median turns, failure rate, token efficiency.
 
-**Variant rankings** — a sortable, filterable table ranked by pass rate, token cost, and speed. Instantly spot which model + skill + MCP combo wins.
+**Variant rankings** - a sortable, filterable table ranked by pass rate, token cost, and speed. Instantly spot which model + skill + MCP combo wins.
 
-**Pass rate charts** — horizontal bar charts color-coded by performance. A scatter plot maps token cost against pass rate, with the Pareto front drawn on top so you can see the efficiency frontier.
+**Pass rate charts** - horizontal bar charts color-coded by performance. A scatter plot maps token cost against pass rate, with the Pareto front drawn on top so you can see the efficiency frontier.
 
-**Task heatmap** — a full matrix of tasks vs. variants, colored from red to teal. Click any cell to drill into that specific combination.
+**Task heatmap** - a full matrix of tasks vs. variants, colored from red to teal. Click any cell to drill into that specific combination.
 
-**Variant deep dive** — per-task breakdowns with outcome dots, box plots of turn distributions, failure category pie charts (infra / provider / tool / timeout / task), and tool usage bar charts showing success vs. failure rates per tool.
+**Variant deep dive** - per-task breakdowns with outcome dots, box plots of turn distributions, failure category pie charts (infra / provider / tool / timeout / task), and tool usage bar charts showing success vs. failure rates per tool.
 
-**Trial inspector** — a full chronological timeline of a single trial: every LLM call (with duration and token count), every tool invocation (with arguments and pass/fail), compactions, guardrail interventions, and reviewer feedback. Expand any event to see the raw details.
+**Trial inspector** - a full chronological timeline of a single trial: every LLM call (with duration and token count), every tool invocation (with arguments and pass/fail), compactions, guardrail interventions, and reviewer feedback. Expand any event to see the raw details.
 
-**Campaign comparison** — pick two runs and see deltas: pass rate changes, Cliff's delta effect sizes, and a bar chart of improvements and regressions across all common variants.
+**Campaign comparison** - pick two runs and see deltas: pass rate changes, Cliff's delta effect sizes, and a bar chart of improvements and regressions across all common variants.
 
-**Dark mode** included. The whole thing exports to **static HTML** — share results without running a server.
+**Dark mode** included. The whole thing exports to **static HTML** - share results without running a server.
 
 ## Quick Start
 
@@ -123,7 +124,7 @@ Add constraints to exclude bad combinations. Use sampling modes (full, random, a
 
 ### Failure Classification and Smart Retries
 
-Every failure is classified into one of five categories — infra, provider, tool, timeout, or task — each with independent retry limits and exponential backoff. Rate limits get retried automatically. Wrong answers don't.
+Every failure is classified into one of five categories - infra, provider, tool, timeout, or task - each with independent retry limits and exponential backoff. Rate limits get retried automatically. Wrong answers don't.
 
 ### Budget Tracking
 

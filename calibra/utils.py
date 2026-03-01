@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+from pathlib import Path
 
 
 def safe_num(val: object, default: float = 0.0) -> float:
@@ -15,6 +16,27 @@ def safe_num(val: object, default: float = 0.0) -> float:
     if not math.isfinite(x):
         return default
     return x
+
+
+def sum_prompt_tokens(report: dict) -> float:
+    """Sum ``prompt_tokens_est`` from LLM call events in a report timeline."""
+    return sum(
+        safe_num(e.get("prompt_tokens_est", 0))
+        for e in report.get("timeline", [])
+        if e.get("type") == "llm_call"
+    )
+
+
+def write_json(path: Path, data: object) -> None:
+    """Write *data* as JSON with indent=2 and trailing newline (project convention)."""
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+
+
+def safe_rate(numerator: float, denominator: float, ndigits: int = 4) -> float:
+    """Compute *numerator / denominator*, returning 0.0 when *denominator* is zero."""
+    return round(numerator / denominator, ndigits) if denominator > 0 else 0.0
 
 
 def json_for_html(data: object) -> str:

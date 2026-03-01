@@ -113,7 +113,7 @@ or return type. The existing tests in `test_api.py` should still pass.
 <p>The entire <code>env/</code> tree is copied into a temporary directory for each trial, so the original files are never modified.</p>
 <h2 id="verifysh-the-verifier">verify.sh: the verifier</h2>
 <p>An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout. If <code>verify.sh</code> is not present, the trial won't have a <code>verified</code> field and pass rates can't be computed.</p>
-<p>When a campaign has a <code>[reviewer]</code> configured, <code>verify.sh</code> is skipped — the reviewer determines pass/fail instead. Tasks can include both <code>verify.sh</code> and be used with reviewer campaigns; the campaign config controls which verification method is used.</p>
+<p>When a campaign has a <code>[reviewer]</code> configured, <code>verify.sh</code> is skipped - the reviewer determines pass/fail instead. Tasks can include both <code>verify.sh</code> and be used with reviewer campaigns; the campaign config controls which verification method is used.</p>
 <p>Make sure the script is executable:</p>
 <pre><code class="language-bash">chmod +x tasks/my-task/verify.sh
 </code></pre>

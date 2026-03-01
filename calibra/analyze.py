@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import random
 import statistics
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from calibra.utils import safe_num as _safe_num
+from calibra.utils import safe_num as _safe_num, sum_prompt_tokens
 
 
 @dataclass
@@ -71,10 +72,7 @@ def extract_metrics(
     cal = report.get("calibra", {})
     result = report.get("result", {})
 
-    timeline = report.get("timeline", [])
-    prompt_tokens = sum(
-        _safe_num(e.get("prompt_tokens_est", 0)) for e in timeline if e.get("type") == "llm_call"
-    )
+    prompt_tokens = sum_prompt_tokens(report)
 
     return TrialMetrics(
         task=cal.get("task", report.get("task", "")),
@@ -102,14 +100,14 @@ def _compute_stat(values: list[float]) -> StatSummary:
     if not values:
         return StatSummary(0, 0, 0, 0, 0, 0, 0, 0)
     n = len(values)
-    mean = statistics.mean(values)
-    med = statistics.median(values)
-    std = statistics.stdev(values) if n > 1 else 0.0
-    mn = min(values)
-    mx = max(values)
     sorted_v = sorted(values)
-    p90_idx = int(0.9 * (n - 1))
-    p90 = sorted_v[p90_idx]
+    mean = statistics.mean(sorted_v)
+    mid = n // 2
+    med = sorted_v[mid] if n % 2 else (sorted_v[mid - 1] + sorted_v[mid]) / 2
+    std = statistics.stdev(values) if n > 1 else 0.0
+    mn = sorted_v[0]
+    mx = sorted_v[-1]
+    p90 = statistics.quantiles(sorted_v, n=10)[-1] if n >= 2 else sorted_v[-1]
     se = std / (n**0.5) if n > 1 else 0
     ci_lower = mean - 1.96 * se
     ci_upper = mean + 1.96 * se
@@ -132,9 +130,7 @@ def aggregate_variant(metrics: list[TrialMetrics]) -> AggregateMetrics:
 
     label = metrics[0].variant_label
 
-    outcome_counts: dict[str, int] = {}
-    for m in metrics:
-        outcome_counts[m.outcome] = outcome_counts.get(m.outcome, 0) + 1
+    outcome_counts = dict(Counter(m.outcome for m in metrics))
 
     passed = sum(1 for m in metrics if m.verified is True)
     pass_rate = passed / n if n > 0 else 0.0
@@ -194,8 +190,13 @@ def paired_bootstrap_ci(
 
 
 def cliffs_delta(x: list[float], y: list[float]) -> tuple[float, str]:
-    n_more = sum(1 for a in x for b in y if a > b)
-    n_less = sum(1 for a in x for b in y if a < b)
+    n_more = n_less = 0
+    for a in x:
+        for b in y:
+            if a > b:
+                n_more += 1
+            elif a < b:
+                n_less += 1
     delta = (n_more - n_less) / (len(x) * len(y))
     abs_d = abs(delta)
     if abs_d < 0.147:

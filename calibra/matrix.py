@@ -25,17 +25,18 @@ class Variant:
     mcp: McpVariant
     environment: EnvironmentVariant
 
+    def dim_labels(self) -> dict[str, str]:
+        return {
+            "model": self.model.label,
+            "agent_instructions": self.agent_instructions.label,
+            "skills": self.skills.label,
+            "mcp": self.mcp.label,
+            "environment": self.environment.label,
+        }
+
     @property
     def label(self) -> str:
-        return "_".join(
-            [
-                self.model.label,
-                self.agent_instructions.label,
-                self.skills.label,
-                self.mcp.label,
-                self.environment.label,
-            ]
-        )
+        return "_".join(self.dim_labels().values())
 
 
 def expand_matrix(campaign: Campaign) -> list[Variant]:
@@ -53,14 +54,8 @@ def expand_matrix(campaign: Campaign) -> list[Variant]:
 
 def apply_constraints(variants: list[Variant], constraints: list[dict]) -> list[Variant]:
     def matches(variant: Variant, pairs: dict) -> bool:
-        dim_map = {
-            "model": variant.model.label,
-            "agent_instructions": variant.agent_instructions.label,
-            "skills": variant.skills.label,
-            "mcp": variant.mcp.label,
-            "environment": variant.environment.label,
-        }
-        return all(dim_map.get(dim) == label for dim, label in pairs.items())
+        labels = variant.dim_labels()
+        return all(labels.get(dim) == label for dim, label in pairs.items())
 
     result = []
     for v in variants:
@@ -90,19 +85,10 @@ def apply_screening(variants: list[Variant], sampling: SamplingConfig, seed: int
         if not variants:
             return []
         baseline = variants[0]
+        baseline_labels = baseline.dim_labels()
         result = [baseline]
         for v in variants[1:]:
-            diffs = 0
-            if v.model.label != baseline.model.label:
-                diffs += 1
-            if v.agent_instructions.label != baseline.agent_instructions.label:
-                diffs += 1
-            if v.skills.label != baseline.skills.label:
-                diffs += 1
-            if v.mcp.label != baseline.mcp.label:
-                diffs += 1
-            if v.environment.label != baseline.environment.label:
-                diffs += 1
+            diffs = sum(1 for d, lbl in v.dim_labels().items() if lbl != baseline_labels[d])
             if diffs == 1:
                 result.append(v)
         if sampling.max_variants > 0:

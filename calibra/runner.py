@@ -78,6 +78,7 @@ class TrialResult:
     error_message: str | None
     attempts: int
     stderr_capture: str | None = None
+    reviewer_verdict: bool | None = None
 
 
 def compute_trial_seed(base_seed: int, task_name: str, variant_label: str, repeat: int) -> int:
@@ -123,14 +124,10 @@ def setup_workspace(spec: TrialSpec, variant: Variant) -> Path:
     shutil.copytree(spec.task.env_dir, tmpdir, dirs_exist_ok=True)
 
     if variant.environment.overlay:
-        overlay = Path(variant.environment.overlay)
-        if overlay.is_dir():
-            shutil.copytree(overlay, tmpdir, dirs_exist_ok=True)
+        shutil.copytree(Path(variant.environment.overlay), tmpdir, dirs_exist_ok=True)
 
     if variant.agent_instructions.agents_md:
-        agents_md = Path(variant.agent_instructions.agents_md)
-        if agents_md.is_file():
-            shutil.copy2(agents_md, tmpdir / "AGENTS.md")
+        shutil.copy2(Path(variant.agent_instructions.agents_md), tmpdir / "AGENTS.md")
 
     return tmpdir
 
@@ -159,44 +156,51 @@ def _load_mcp_config(path: Path) -> dict | None:
             return json.load(f)
 
 
+def _resolve_mcp_servers(spec: TrialSpec) -> dict | None:
+    if spec.variant.mcp.config:
+        return _load_mcp_config(Path(spec.variant.mcp.config))
+    return None
+
+
+_CLI_FLAG_MAP = {
+    "yolo": "--yolo",
+    "no_skills": "--no-skills",
+    "no_instructions": "--no-instructions",
+}
+_CLI_VALUE_MAP = {
+    "max_output_tokens": "--max-output-tokens",
+    "temperature": "--temperature",
+    "top_p": "--top-p",
+    "api_key": "--api-key",
+    "base_url": "--base-url",
+    "max_context_tokens": "--max-context-tokens",
+    "seed": "--seed",
+}
+_CLI_REPEAT_MAP = {
+    "skills_dir": "--skills-dir",
+    "allowed_dirs": "--add-dir",
+    "allowed_dirs_ro": "--add-dir-ro",
+}
+_CLI_SKIP = {
+    "verbose",
+    "history",
+    "config_dir",
+    "base_dir",
+    "provider",
+    "model",
+    "max_turns",
+    "mcp_servers",
+}
+
+
 def _session_opts_to_cli_args(opts: dict) -> list[str]:
     args = []
-    _FLAG_MAP = {
-        "yolo": "--yolo",
-        "no_skills": "--no-skills",
-        "no_instructions": "--no-instructions",
-    }
-    _VALUE_MAP = {
-        "max_output_tokens": "--max-output-tokens",
-        "temperature": "--temperature",
-        "top_p": "--top-p",
-        "api_key": "--api-key",
-        "base_url": "--base-url",
-        "max_context_tokens": "--max-context-tokens",
-        "seed": "--seed",
-    }
-    _REPEAT_MAP = {
-        "skills_dir": "--skills-dir",
-        "allowed_dirs": "--add-dir",
-        "allowed_dirs_ro": "--add-dir-ro",
-    }
-    _SKIP = {
-        "verbose",
-        "history",
-        "config_dir",
-        "base_dir",
-        "provider",
-        "model",
-        "max_turns",
-        "mcp_servers",
-    }
-
     for key, value in opts.items():
-        if key in _SKIP:
+        if key in _CLI_SKIP:
             continue
-        if key in _FLAG_MAP:
+        if key in _CLI_FLAG_MAP:
             if value:
-                args.append(_FLAG_MAP[key])
+                args.append(_CLI_FLAG_MAP[key])
             continue
         if key == "read_guard":
             if value is False:
@@ -206,15 +210,15 @@ def _session_opts_to_cli_args(opts: dict) -> list[str]:
             if value is True:
                 args.append("--proactive-summaries")
             continue
-        if key in _VALUE_MAP:
-            args.extend([_VALUE_MAP[key], str(value)])
+        if key in _CLI_VALUE_MAP:
+            args.extend([_CLI_VALUE_MAP[key], str(value)])
             continue
         if key == "allowed_commands" and isinstance(value, list):
             args.extend(["--allowed-commands", ",".join(value)])
             continue
-        if key in _REPEAT_MAP and isinstance(value, list):
+        if key in _CLI_REPEAT_MAP and isinstance(value, list):
             for item in value:
-                args.extend([_REPEAT_MAP[key], str(item)])
+                args.extend([_CLI_REPEAT_MAP[key], str(item)])
             continue
         if key == "extra_body" and isinstance(value, dict):
             args.extend(["--extra-body", json.dumps(value)])
@@ -299,12 +303,7 @@ def run_single_trial(
     try:
         from swival import Session
 
-        mcp_servers = None
-        if spec.variant.mcp.config:
-            mcp_config_path = Path(spec.variant.mcp.config)
-            if mcp_config_path.exists():
-                mcp_servers = _load_mcp_config(mcp_config_path)
-
+        mcp_servers = _resolve_mcp_servers(spec)
         skills_dir = spec.variant.skills.skills_dirs or None
 
         yolo, session_opts = _resolve_yolo(merged_session_opts or {})
@@ -398,9 +397,7 @@ def run_trial_cli(
     env, xdg_dir = _make_isolated_env()
     report_path = tmpdir / ".calibra-report.json"
 
-    swival_toml = tmpdir / "swival.toml"
-    if swival_toml.exists():
-        swival_toml.unlink()
+    (tmpdir / "swival.toml").unlink(missing_ok=True)
 
     try:
         argv = [
@@ -425,12 +422,7 @@ def run_trial_cli(
             str(campaign.reviewer.max_rounds),
         ]
 
-        mcp_servers = None
-        if spec.variant.mcp.config:
-            mcp_config_path = Path(spec.variant.mcp.config)
-            if mcp_config_path.exists():
-                mcp_servers = _load_mcp_config(mcp_config_path)
-
+        mcp_servers = _resolve_mcp_servers(spec)
         if mcp_servers:
             mcp_file = _write_cli_mcp_config(mcp_servers, tmpdir)
             argv.extend(["--mcp-config", str(mcp_file)])
@@ -468,9 +460,11 @@ def run_trial_cli(
             except (json.JSONDecodeError, OSError):
                 pass
 
+        verdict = None
         verified = None
         if report and campaign.reviewer:
-            verified = _reviewer_verdict(report)
+            verdict = _reviewer_verdict(report)
+            verified = verdict
 
         failure_class = _classify_cli_failure(exit_code, stderr_text, report, timed_out, verified)
 
@@ -483,6 +477,7 @@ def run_trial_cli(
             error_message=stderr_text if failure_class else None,
             attempts=1,
             stderr_capture=stderr_text or None,
+            reviewer_verdict=verdict,
         )
 
     except Exception as e:
@@ -595,7 +590,7 @@ def write_trial_report(output_dir: Path, result: TrialResult, campaign: Campaign
         review_rounds = stats.get("review_rounds", 0)
         report["calibra"]["review_rounds"] = review_rounds
 
-        verdict = _reviewer_verdict(result.report)
+        verdict = result.reviewer_verdict
         if verdict is True:
             report["calibra"]["reviewer_verdict"] = "accepted"
         elif verdict is False:
@@ -603,9 +598,9 @@ def write_trial_report(output_dir: Path, result: TrialResult, campaign: Campaign
         else:
             report["calibra"]["reviewer_verdict"] = "error"
 
-    with open(path, "w") as f:
-        json.dump(report, f, indent=2)
-        f.write("\n")
+    from calibra.utils import write_json
+
+    write_json(path, report)
 
 
 def run_campaign(
@@ -728,7 +723,7 @@ def run_campaign(
         "failed": sum(1 for r in results if r.failure_class is not None),
     }
     summary_path = out / "summary.json"
-    with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=2)
-        f.write("\n")
+    from calibra.utils import write_json
+
+    write_json(summary_path, summary)
     print(f"Summary written to {summary_path}")
