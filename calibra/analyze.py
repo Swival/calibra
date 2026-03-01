@@ -30,6 +30,7 @@ class TrialMetrics:
     skills_used: list[str]
     guardrail_interventions: int
     failure_class: str | None
+    review_rounds: int = 0
 
 
 @dataclass
@@ -58,8 +59,9 @@ class AggregateMetrics:
     wall_time_s: StatSummary
     compactions: StatSummary
     prompt_tokens_est: StatSummary
-    score_per_1k_tokens: float
-    pass_rate_per_minute: float
+    review_rounds: StatSummary | None = None
+    score_per_1k_tokens: float = 0.0
+    pass_rate_per_minute: float = 0.0
 
 
 def extract_metrics(
@@ -92,6 +94,7 @@ def extract_metrics(
         skills_used=stats.get("skills_used", []),
         guardrail_interventions=_safe_num(stats.get("guardrail_interventions", 0)),
         failure_class=cal.get("failure_class", failure_class),
+        review_rounds=_safe_num(cal.get("review_rounds", stats.get("review_rounds", 0))),
     )
 
 
@@ -148,6 +151,10 @@ def aggregate_variant(metrics: list[TrialMetrics]) -> AggregateMetrics:
     compactions = _compute_stat(vals("compactions"))
     tokens = _compute_stat(vals("prompt_tokens_est"))
 
+    review_vals = vals("review_rounds")
+    has_reviews = any(v > 0 for v in review_vals)
+    review_rounds = _compute_stat(review_vals) if has_reviews else None
+
     score_per_1k = (pass_rate * 1000 / tokens.mean) if tokens.mean > 0 else 0.0
     pass_per_min = (pass_rate * 60 / wall_time.mean) if wall_time.mean > 0 else 0.0
 
@@ -164,6 +171,7 @@ def aggregate_variant(metrics: list[TrialMetrics]) -> AggregateMetrics:
         wall_time_s=wall_time,
         compactions=compactions,
         prompt_tokens_est=tokens,
+        review_rounds=review_rounds,
         score_per_1k_tokens=round(score_per_1k, 4),
         pass_rate_per_minute=round(pass_per_min, 4),
     )
@@ -336,17 +344,24 @@ def _print_results(
     print("\n  Rankings:")
     max_var_len = max(len(a.variant_label) for a in rankings)
     header_var = "Variant".ljust(max_var_len)
+    has_reviews = any(a.review_rounds is not None for a in rankings)
     print(
         f"    {'#':>3}  {header_var}  {'Pass':>6}  {'Turns':>6}  {'Tokens':>8}  {'LLM Time':>8}  {'Wall Time':>9}"
+        + (f"  {'Reviews':>8}" if has_reviews else "")
     )
     print(
         f"    {'---':>3}  {'-' * max_var_len}  {'------':>6}  {'------':>6}  {'--------':>8}  {'--------':>8}  {'---------':>9}"
+        + (f"  {'--------':>8}" if has_reviews else "")
     )
     for i, a in enumerate(rankings, 1):
+        review_col = ""
+        if has_reviews:
+            rr = a.review_rounds.mean if a.review_rounds else 0.0
+            review_col = f"  {rr:>8.1f}"
         print(
             f"    {i:>3}  {a.variant_label:<{max_var_len}}  {a.pass_rate:>5.0%}"
             f"  {a.turns.mean:>6.1f}  {a.prompt_tokens_est.mean:>8.0f}"
-            f"  {a.llm_time_s.mean:>7.1f}s  {a.wall_time_s.mean:>8.1f}s"
+            f"  {a.llm_time_s.mean:>7.1f}s  {a.wall_time_s.mean:>8.1f}s" + review_col
         )
 
     # Per-variant task breakdown

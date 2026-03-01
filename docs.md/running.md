@@ -111,7 +111,21 @@ For each trial, Calibra sets up an isolated workspace in a specific order. First
 
 ## Trial execution flow
 
-For each trial, Calibra sets up the workspace as described above, then computes a deterministic trial seed from `SHA256(seed:task:variant:repeat)`. It creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `allowed_commands` is set, `yolo` is automatically flipped to `false` so the allowlist takes effect. Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
+For each trial, Calibra sets up the workspace as described above, then computes a deterministic trial seed from `SHA256(seed:task:variant:repeat)`.
+
+### Session mode (default)
+
+When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `allowed_commands` is set, `yolo` is automatically flipped to `false` so the allowlist takes effect. Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
+
+### Reviewer mode
+
+When a `[reviewer]` is configured, Calibra runs the `swival` CLI as a subprocess instead of using the Session API. This is necessary because the reviewer feature is CLI-only in Swival, and `Session.ask()` returns `report=None` so retry round data would be invisible to metrics and budget tracking.
+
+The CLI invocation includes `--report` (to get the full JSON report with timeline events), `--reviewer` (the reviewer command), `--max-review-rounds`, `--quiet`, `--no-history`, and all session options mapped to their CLI flag equivalents. Swival handles the full reviewer loop internally — initial run plus up to `max_rounds` retry rounds.
+
+To prevent user or project config from leaking into trials, Calibra sets `XDG_CONFIG_HOME` to an empty temp directory (preventing `~/.config/swival/config.toml` from loading), deletes any `swival.toml` that may have been copied from the task's `env/` or overlay, and passes `--no-mcp` unless the variant has explicit MCP config.
+
+After the subprocess completes, Calibra reads the report JSON, determines `verified` from the last review event in the timeline (exit 0 = true, exit 1 = false, exit 2+ = null), and classifies failures using the report data first with a stderr fallback. `verify.sh` is skipped in reviewer mode.
 
 ## Monitoring progress
 

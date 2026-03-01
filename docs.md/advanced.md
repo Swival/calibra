@@ -145,6 +145,10 @@ When a trial fails, Calibra classifies the failure to determine whether to retry
 
 The first matching class wins. If nothing matches, the trial is considered successful.
 
+### CLI mode failure classification
+
+When a reviewer is configured, trials run via the `swival` CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as `timeout`. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first — this preserves tool-failure detection from `tool_calls_failed > 0`. However, if the report says `task` but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to `provider`. When no report is available, stderr pattern matching is the sole classification input. Since `--quiet` is always passed, stderr may be empty in some failure cases, resulting in a `task` classification as a fallback.
+
 ### Retry behavior
 
 Each failure class has its own retry count:

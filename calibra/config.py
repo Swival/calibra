@@ -6,6 +6,9 @@ import copy
 import functools
 import hashlib
 import json
+import os
+import shlex
+import shutil
 import tomllib
 import typing
 from dataclasses import dataclass, field
@@ -15,6 +18,12 @@ from typing import Union, get_args, get_origin
 
 class ConfigError(Exception):
     """Raised for invalid campaign configuration."""
+
+
+@dataclass
+class ReviewerConfig:
+    command: str
+    max_rounds: int = 5
 
 
 @dataclass
@@ -92,6 +101,7 @@ class Campaign:
     environments: list[EnvironmentVariant]
     constraints: list[dict] = field(default_factory=list)
     session_options: dict = field(default_factory=dict)
+    reviewer: ReviewerConfig | None = None
     config_hash: str = ""
 
 
@@ -384,6 +394,32 @@ def load_campaign(path: str | Path) -> Campaign:
                         f"Unknown label '{label}' for dimension '{dim}' in constraint {section}"
                     )
 
+    reviewer = None
+    reviewer_raw = raw.get("reviewer")
+    if reviewer_raw is not None:
+        rev_command = reviewer_raw.get("command")
+        if not rev_command or not isinstance(rev_command, str) or not rev_command.strip():
+            raise ConfigError("[reviewer] requires a non-empty 'command'")
+
+        rev_max_rounds = reviewer_raw.get("max_rounds", 5)
+        if not isinstance(rev_max_rounds, int) or rev_max_rounds < 0:
+            raise ConfigError("[reviewer] max_rounds must be a non-negative integer")
+
+        try:
+            tokens = shlex.split(rev_command)
+        except ValueError as e:
+            raise ConfigError(f"[reviewer] malformed command string: {e}") from e
+        executable = tokens[0]
+        resolved_exe = shutil.which(executable)
+        if resolved_exe is None:
+            candidate = (base / executable).resolve()
+            if not candidate.is_file() or not os.access(candidate, os.X_OK):
+                raise ConfigError(f"[reviewer] command executable not found: {executable}")
+            resolved_exe = str(candidate)
+
+        rev_command_resolved = shlex.join([resolved_exe] + tokens[1:])
+        reviewer = ReviewerConfig(command=rev_command_resolved, max_rounds=rev_max_rounds)
+
     config_hash = compute_config_hash(raw)
 
     return Campaign(
@@ -404,5 +440,6 @@ def load_campaign(path: str | Path) -> Campaign:
         environments=environments,
         constraints=constraints,
         session_options=campaign_session_opts,
+        reviewer=reviewer,
         config_hash=config_hash,
     )

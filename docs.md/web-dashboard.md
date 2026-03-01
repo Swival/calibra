@@ -40,7 +40,7 @@ The landing page shows all campaigns found in the results directory. Each campai
 
 ### Campaign detail
 
-This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate. Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, and efficiency scores. Click any variant row to see its detail page.
+This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate. Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.
 
 ### Task heatmap
 

@@ -51,22 +51,23 @@ This prints a formatted table using Rich:
 
 Calibra extracts these metrics from each trial report:
 
-| Metric                    | Description                                                       |
-| ------------------------- | ----------------------------------------------------------------- |
-| `outcome`                 | Agent result: `"success"`, `"error"`, `"exhausted"`               |
-| `verified`                | Whether `verify.sh` passed (true/false/null if no verifier)       |
-| `turns`                   | Number of conversation turns                                      |
-| `tool_calls_total`        | Total tool invocations                                            |
-| `tool_calls_failed`       | Tool invocations that returned errors                             |
-| `llm_time_s`              | Time spent in LLM API calls                                       |
-| `tool_time_s`             | Time spent executing tools                                        |
-| `wall_time_s`             | Total wall-clock time                                             |
-| `compactions`             | Number of context compactions (long conversations)                |
-| `prompt_tokens_est`       | Estimated total prompt tokens                                     |
-| `failure_class`           | `"infra"`, `"provider"`, `"tool"`, `"timeout"`, `"task"`, or null |
-| `tool_usage`              | Per-tool breakdown of succeeded/failed calls                      |
-| `skills_used`             | List of skills invoked during the trial                           |
-| `guardrail_interventions` | Number of guardrail interventions                                 |
+| Metric                    | Description                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| `outcome`                 | Agent result: `"success"`, `"error"`, `"exhausted"`                                    |
+| `verified`                | Whether verification passed (true/false/null). Set by `verify.sh` or reviewer verdict. |
+| `turns`                   | Number of conversation turns                                                           |
+| `tool_calls_total`        | Total tool invocations                                                                 |
+| `tool_calls_failed`       | Tool invocations that returned errors                                                  |
+| `llm_time_s`              | Time spent in LLM API calls                                                            |
+| `tool_time_s`             | Time spent executing tools                                                             |
+| `wall_time_s`             | Total wall-clock time                                                                  |
+| `compactions`             | Number of context compactions (long conversations)                                     |
+| `prompt_tokens_est`       | Estimated total prompt tokens                                                          |
+| `failure_class`           | `"infra"`, `"provider"`, `"tool"`, `"timeout"`, `"task"`, or null                      |
+| `tool_usage`              | Per-tool breakdown of succeeded/failed calls                                           |
+| `skills_used`             | List of skills invoked during the trial                                                |
+| `guardrail_interventions` | Number of guardrail interventions                                                      |
+| `review_rounds`           | Number of reviewer retry rounds (0 when no reviewer configured)                        |
 
 ## Per-variant aggregation
 
@@ -84,7 +85,7 @@ Rounded to 4 decimal places.
 
 ### Statistical summaries
 
-For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places.
+For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places. The `review_rounds` stat summary is only included when at least one trial in the variant has review_rounds > 0.
 
 The 95% confidence interval uses the formula `mean ± 1.96 × (std / sqrt(n))`.
 
@@ -144,6 +145,7 @@ The full machine-readable output:
       "tool_calls_total": {"mean": 3.8, ...},
       "wall_time_s": {"mean": 14.5, ...},
       "prompt_tokens_est": {"mean": 2100.0, ...},
+      "review_rounds": {"mean": 1.5, "median": 1.0, "std": 0.8, "...": "..."},
       "score_per_1k_tokens": 0.413,
       "pass_rate_per_minute": 3.585
     }
@@ -169,7 +171,7 @@ A Markdown report with variant rankings (sorted by rank), Pareto-efficient varia
 
 ### summary.csv
 
-A flat table with one row per variant and columns for key metrics, suitable for importing into spreadsheets or data tools.
+A flat table with one row per variant and columns for key metrics, suitable for importing into spreadsheets or data tools. When any variant has reviewer data, a `review_rounds_mean` column is included.
 
 ## Comparing campaigns
 

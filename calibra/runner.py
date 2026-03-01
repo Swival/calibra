@@ -5,7 +5,9 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import shutil
+import signal
 import subprocess
 import tempfile
 import threading
@@ -156,6 +158,131 @@ def _load_mcp_config(path: Path) -> dict | None:
             return json.load(f)
 
 
+def _session_opts_to_cli_args(opts: dict) -> list[str]:
+    args = []
+    _FLAG_MAP = {
+        "yolo": "--yolo",
+        "no_skills": "--no-skills",
+        "no_instructions": "--no-instructions",
+    }
+    _VALUE_MAP = {
+        "max_output_tokens": "--max-output-tokens",
+        "temperature": "--temperature",
+        "top_p": "--top-p",
+        "api_key": "--api-key",
+        "base_url": "--base-url",
+        "max_context_tokens": "--max-context-tokens",
+        "seed": "--seed",
+    }
+    _REPEAT_MAP = {
+        "skills_dir": "--skills-dir",
+        "allowed_dirs": "--add-dir",
+        "allowed_dirs_ro": "--add-dir-ro",
+    }
+    _SKIP = {
+        "verbose",
+        "history",
+        "config_dir",
+        "base_dir",
+        "provider",
+        "model",
+        "max_turns",
+        "mcp_servers",
+    }
+
+    for key, value in opts.items():
+        if key in _SKIP:
+            continue
+        if key in _FLAG_MAP:
+            if value:
+                args.append(_FLAG_MAP[key])
+            continue
+        if key == "read_guard":
+            if value is False:
+                args.append("--no-read-guard")
+            continue
+        if key == "proactive_summaries":
+            if value is True:
+                args.append("--proactive-summaries")
+            continue
+        if key in _VALUE_MAP:
+            args.extend([_VALUE_MAP[key], str(value)])
+            continue
+        if key == "allowed_commands" and isinstance(value, list):
+            args.extend(["--allowed-commands", ",".join(value)])
+            continue
+        if key in _REPEAT_MAP and isinstance(value, list):
+            for item in value:
+                args.extend([_REPEAT_MAP[key], str(item)])
+            continue
+        if key == "extra_body" and isinstance(value, dict):
+            args.extend(["--extra-body", json.dumps(value)])
+            continue
+        warnings.warn(f"Unknown session option '{key}' skipped in CLI mode", stacklevel=2)
+
+    return args
+
+
+def _write_cli_mcp_config(servers: dict, tmpdir: Path) -> Path:
+    path = tmpdir / ".calibra-mcp.json"
+    with open(path, "w") as f:
+        json.dump({"mcpServers": servers}, f)
+    return path
+
+
+def _make_isolated_env() -> tuple[dict[str, str], Path]:
+    env = os.environ.copy()
+    empty_config = Path(tempfile.mkdtemp(prefix="calibra_xdg_"))
+    env["XDG_CONFIG_HOME"] = str(empty_config)
+    return env, empty_config
+
+
+def _kill_tree(proc: subprocess.Popen):
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except OSError:
+        proc.kill()
+    proc.wait()
+
+
+def _reviewer_verdict(report: dict) -> bool | None:
+    review_events = [e for e in report.get("timeline", []) if e.get("type") == "review"]
+    if not review_events:
+        return None
+    last = review_events[-1]
+    exit_code = last.get("exit_code")
+    if exit_code == 0:
+        return True
+    if exit_code == 1:
+        return False
+    return None
+
+
+def _classify_cli_failure(
+    exit_code: int,
+    stderr_text: str,
+    report: dict | None,
+    timed_out: bool,
+    verified: bool | None,
+) -> str | None:
+    if timed_out:
+        return classify_failure(TimeoutError("wall-clock timeout"), report, timed_out=True)
+
+    if exit_code == 0:
+        return classify_failure(None, report, timed_out=False, verified=verified)
+
+    if report:
+        report_class = classify_failure(None, report, timed_out=False, verified=verified)
+        if report_class is not None:
+            if report_class == "task" and exit_code != 0:
+                stderr_class = classify_failure(RuntimeError(stderr_text), None, timed_out=False)
+                if stderr_class == "provider":
+                    return stderr_class
+            return report_class
+
+    return classify_failure(RuntimeError(stderr_text), None, timed_out=False)
+
+
 def run_single_trial(
     spec: TrialSpec,
     campaign: Campaign,
@@ -250,6 +377,147 @@ def run_single_trial(
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+def run_trial_cli(
+    spec: TrialSpec,
+    campaign: Campaign,
+    *,
+    keep_workdirs: bool = False,
+    merged_session_opts: dict | None = None,
+) -> TrialResult:
+    tmpdir = setup_workspace(spec, spec.variant)
+    start = time.monotonic()
+    timed_out = False
+    env, xdg_dir = _make_isolated_env()
+    report_path = tmpdir / ".calibra-report.json"
+
+    swival_toml = tmpdir / "swival.toml"
+    if swival_toml.exists():
+        swival_toml.unlink()
+
+    try:
+        argv = [
+            "swival",
+            spec.task.prompt,
+            "--base-dir",
+            str(tmpdir),
+            "--provider",
+            spec.variant.model.provider,
+            "--model",
+            spec.variant.model.model,
+            "--max-turns",
+            str(campaign.max_turns),
+            "--seed",
+            str(spec.trial_seed),
+            "--quiet",
+            "--no-history",
+            "--report",
+            str(report_path),
+            "--reviewer",
+            campaign.reviewer.command,
+            "--max-review-rounds",
+            str(campaign.reviewer.max_rounds),
+        ]
+
+        mcp_servers = None
+        if spec.variant.mcp.config:
+            mcp_config_path = Path(spec.variant.mcp.config)
+            if mcp_config_path.exists():
+                mcp_servers = _load_mcp_config(mcp_config_path)
+
+        if mcp_servers:
+            mcp_file = _write_cli_mcp_config(mcp_servers, tmpdir)
+            argv.extend(["--mcp-config", str(mcp_file)])
+        else:
+            argv.append("--no-mcp")
+
+        yolo, session_opts = _resolve_yolo(merged_session_opts or {})
+        if yolo:
+            argv.append("--yolo")
+        argv.extend(_session_opts_to_cli_args(session_opts))
+
+        proc = subprocess.Popen(
+            argv,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        try:
+            stdout_bytes, stderr_bytes = proc.communicate(timeout=campaign.timeout_s)
+        except subprocess.TimeoutExpired:
+            _kill_tree(proc)
+            timed_out = True
+            stderr_bytes = b""
+
+        wall_time = time.monotonic() - start
+        exit_code = proc.returncode if not timed_out else -1
+        stderr_text = stderr_bytes.decode("utf-8", errors="replace")
+
+        report = None
+        if report_path.exists():
+            try:
+                with open(report_path) as f:
+                    report = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                pass
+
+        verified = None
+        if report and campaign.reviewer:
+            verified = _reviewer_verdict(report)
+
+        failure_class = _classify_cli_failure(exit_code, stderr_text, report, timed_out, verified)
+
+        return TrialResult(
+            spec=spec,
+            report=report,
+            verified=verified,
+            failure_class=failure_class,
+            wall_time_s=round(wall_time, 3),
+            error_message=stderr_text if failure_class else None,
+            attempts=1,
+        )
+
+    except Exception as e:
+        wall_time = time.monotonic() - start
+        failure_class = classify_failure(e, None, timed_out)
+        return TrialResult(
+            spec=spec,
+            report=None,
+            verified=None,
+            failure_class=failure_class,
+            wall_time_s=round(wall_time, 3),
+            error_message=str(e),
+            attempts=1,
+        )
+
+    finally:
+        if not keep_workdirs:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        shutil.rmtree(xdg_dir, ignore_errors=True)
+
+
+def _run_trial_impl(
+    spec: TrialSpec,
+    campaign: Campaign,
+    *,
+    keep_workdirs: bool = False,
+    merged_session_opts: dict | None = None,
+) -> TrialResult:
+    if campaign.reviewer:
+        return run_trial_cli(
+            spec,
+            campaign,
+            keep_workdirs=keep_workdirs,
+            merged_session_opts=merged_session_opts,
+        )
+    return run_single_trial(
+        spec,
+        campaign,
+        keep_workdirs=keep_workdirs,
+        merged_session_opts=merged_session_opts,
+    )
+
+
 def run_trial_with_retry(
     spec: TrialSpec,
     campaign: Campaign,
@@ -268,7 +536,7 @@ def run_trial_with_retry(
             )
             time.sleep(backoff)
 
-        result = run_single_trial(
+        result = _run_trial_impl(
             spec,
             campaign,
             keep_workdirs=keep_workdirs,
@@ -308,6 +576,19 @@ def write_trial_report(output_dir: Path, result: TrialResult, campaign: Campaign
         report["calibra"]["error_message"] = result.error_message
     report["calibra"]["wall_time_s"] = result.wall_time_s
     report["calibra"]["attempts"] = result.attempts
+
+    if campaign.reviewer and result.report:
+        stats = result.report.get("stats", {})
+        review_rounds = stats.get("review_rounds", 0)
+        report["calibra"]["review_rounds"] = review_rounds
+
+        verdict = _reviewer_verdict(result.report)
+        if verdict is True:
+            report["calibra"]["reviewer_verdict"] = "accepted"
+        elif verdict is False:
+            report["calibra"]["reviewer_verdict"] = "rejected"
+        else:
+            report["calibra"]["reviewer_verdict"] = "error"
 
     with open(path, "w") as f:
         json.dump(report, f, indent=2)

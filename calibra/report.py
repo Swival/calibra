@@ -33,14 +33,33 @@ def write_summary_md(
 ):
     lines = ["# Campaign Results\n"]
 
+    has_reviews = any(a.review_rounds is not None for a in rankings)
     lines.append("## Rankings\n")
-    lines.append("| Rank | Variant | Pass Rate | Turns (mean) | Tokens (mean) | LLM Time (mean) |")
-    lines.append("|------|---------|-----------|-------------|---------------|-----------------|")
-    for i, a in enumerate(rankings, 1):
+    if has_reviews:
         lines.append(
+            "| Rank | Variant | Pass Rate | Turns (mean) | Tokens (mean) "
+            "| LLM Time (mean) | Reviews (mean) |"
+        )
+        lines.append(
+            "|------|---------|-----------|-------------|---------------|"
+            "-----------------|----------------|"
+        )
+    else:
+        lines.append(
+            "| Rank | Variant | Pass Rate | Turns (mean) | Tokens (mean) | LLM Time (mean) |"
+        )
+        lines.append(
+            "|------|---------|-----------|-------------|---------------|-----------------|"
+        )
+    for i, a in enumerate(rankings, 1):
+        base = (
             f"| {i} | {a.variant_label} | {a.pass_rate:.1%} | {a.turns.mean:.1f} "
             f"| {a.prompt_tokens_est.mean:.0f} | {a.llm_time_s.mean:.1f}s |"
         )
+        if has_reviews:
+            rr = a.review_rounds.mean if a.review_rounds else 0.0
+            base += f" {rr:.1f} |"
+        lines.append(base)
 
     lines.append("\n## Pareto Front (pass rate vs tokens)\n")
     for a in pareto:
@@ -65,6 +84,7 @@ def write_summary_md(
 
 def write_summary_csv(output_dir: Path, aggregates: list[AggregateMetrics]):
     path = output_dir / "summary.csv"
+    has_reviews = any(a.review_rounds is not None for a in aggregates)
     fieldnames = [
         "variant",
         "n_trials",
@@ -79,23 +99,26 @@ def write_summary_csv(output_dir: Path, aggregates: list[AggregateMetrics]):
         "score_per_1k_tokens",
         "pass_rate_per_minute",
     ]
+    if has_reviews:
+        fieldnames.append("review_rounds_mean")
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for a in aggregates:
-            writer.writerow(
-                {
-                    "variant": a.variant_label,
-                    "n_trials": a.n_trials,
-                    "pass_rate": a.pass_rate,
-                    "turns_mean": a.turns.mean,
-                    "turns_std": a.turns.std,
-                    "tokens_mean": a.prompt_tokens_est.mean,
-                    "tokens_std": a.prompt_tokens_est.std,
-                    "llm_time_mean": a.llm_time_s.mean,
-                    "tool_time_mean": a.tool_time_s.mean,
-                    "wall_time_mean": a.wall_time_s.mean,
-                    "score_per_1k_tokens": a.score_per_1k_tokens,
-                    "pass_rate_per_minute": a.pass_rate_per_minute,
-                }
-            )
+            row = {
+                "variant": a.variant_label,
+                "n_trials": a.n_trials,
+                "pass_rate": a.pass_rate,
+                "turns_mean": a.turns.mean,
+                "turns_std": a.turns.std,
+                "tokens_mean": a.prompt_tokens_est.mean,
+                "tokens_std": a.prompt_tokens_est.std,
+                "llm_time_mean": a.llm_time_s.mean,
+                "tool_time_mean": a.tool_time_s.mean,
+                "wall_time_mean": a.wall_time_s.mean,
+                "score_per_1k_tokens": a.score_per_1k_tokens,
+                "pass_rate_per_minute": a.pass_rate_per_minute,
+            }
+            if has_reviews:
+                row["review_rounds_mean"] = a.review_rounds.mean if a.review_rounds else 0.0
+            writer.writerow(row)
