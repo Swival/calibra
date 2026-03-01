@@ -23,10 +23,7 @@ uv run calibra validate experiments/model-shootout.toml
 Output on success:
 
 ```
-Config OK
-  Variants: 10
-  Tasks: 5
-  Trials: 250 (10 variants × 5 tasks × 5 repeats)
+Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 ```
 
 ---
@@ -118,7 +115,7 @@ calibra compare <dir_a> <dir_b> [--output DIR]
 
 | Option         | Default           | Description                      |
 | -------------- | ----------------- | -------------------------------- |
-| `--output DIR` | current directory | Where to write comparison output |
+| `--output DIR` | parent of `dir_a` | Where to write comparison output |
 
 Finds variants common to both campaigns and computes the pass rate delta (B minus A), Cliff's delta effect size and magnitude, and a token usage comparison.
 

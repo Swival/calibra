@@ -13,10 +13,7 @@ Validation checks TOML syntax and required fields, task directory structure (tha
 On success you'll see something like:
 
 ```
-Config OK
-  Variants: 10
-  Tasks: 5
-  Trials: 250 (10 variants × 5 tasks × 5 repeats)
+Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 ```
 
 ## Dry run

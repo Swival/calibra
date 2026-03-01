@@ -285,15 +285,20 @@ def load_campaign(path: str | Path) -> Campaign:
     models_raw = matrix.get("model", [])
     if not models_raw:
         raise ConfigError("At least one [[matrix.model]] is required")
-    models = [
-        ModelVariant(
-            provider=_require(m, "provider", "[[matrix.model]]"),
-            model=_require(m, "model", "[[matrix.model]]"),
-            label=_require(m, "label", "[[matrix.model]]"),
-            session_options=m.get("session", {}),
+    _MODEL_KNOWN_KEYS = {"provider", "model", "label", "session"}
+    models = []
+    for m in models_raw:
+        inline = {k: v for k, v in m.items() if k not in _MODEL_KNOWN_KEYS}
+        session = m.get("session", {})
+        merged = {**inline, **session}
+        models.append(
+            ModelVariant(
+                provider=_require(m, "provider", "[[matrix.model]]"),
+                model=_require(m, "model", "[[matrix.model]]"),
+                label=_require(m, "label", "[[matrix.model]]"),
+                session_options=merged,
+            )
         )
-        for m in models_raw
-    ]
     _check_labels_unique(models, "model")
 
     ai_raw = matrix.get("agent_instructions", [])

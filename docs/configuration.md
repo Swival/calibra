@@ -56,14 +56,15 @@ The matrix defines what you're testing. Calibra takes the Cartesian product of a
 
 ### [[matrix.model]] (required)
 
-At least one model entry is required. Each entry specifies a provider, a model identifier, and a label. You can also attach per-model session options via an inline `session` key (see [Session options](#session-options) below).
+At least one model entry is required. Each entry specifies a provider, a model identifier, and a label. You can also attach per-model session options either directly on the model entry or via an inline `session` sub-table (see [Session options](#session-options) below).
 
-| Field      | Type   | Description                                                       |
-| ---------- | ------ | ----------------------------------------------------------------- |
-| `provider` | string | Provider name (e.g., `"anthropic"`, `"openrouter"`)               |
-| `model`    | string | Model identifier (e.g., `"claude-sonnet-4.6"`)                    |
-| `label`    | string | Unique label within models (used in variant names and file paths) |
-| `session`  | table  | Per-model session option overrides (optional, see below)          |
+| Field                | Type   | Description                                                       |
+| -------------------- | ------ | ----------------------------------------------------------------- |
+| `provider`           | string | Provider name (e.g., `"anthropic"`, `"openrouter"`)               |
+| `model`              | string | Model identifier (e.g., `"claude-sonnet-4.6"`)                    |
+| `label`              | string | Unique label within models (used in variant names and file paths) |
+| `session`            | table  | Per-model session option overrides (optional, see below)          |
+| *any session option* | varies | Session options can also be placed directly on the model entry    |
 
 ```toml
 [[matrix.model]]
@@ -77,11 +78,19 @@ model = "claude-haiku-4.5"
 label = "haiku"
 
 [[matrix.model]]
+provider = "lmstudio"
+model = "qwen3.5-35b-a3b"
+label = "qwen"
+base_url = "http://max.local:1234"
+
+[[matrix.model]]
 provider = "openrouter"
 model = "openai/gpt-5.3-codex"
 label = "codex"
 session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } }
 ```
+
+Session options placed directly on the model entry (like `base_url` above) are merged with the `session` sub-table. If the same key appears in both, the `session` sub-table wins.
 
 ### [[matrix.agent_instructions]] (required)
 
@@ -265,12 +274,18 @@ exclude = { mcp = "none" }
 
 ## [session] options
 
-The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings. Campaign-wide defaults go in a top-level `[session]` table, while per-model overrides go in an inline `session` key on each `[[matrix.model]]` entry. Per-model values are deep-merged on top of campaign defaults, so nested dicts like `extra_body` combine rather than replace.
+The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings. Campaign-wide defaults go in a top-level `[session]` table, while per-model overrides go either directly on the `[[matrix.model]]` entry or in an inline `session` sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like `extra_body` combine rather than replace.
 
 ```toml
 [session]
 allowed_commands = ["python", "uv", "git"]
 temperature = 0.0
+
+[[matrix.model]]
+provider = "lmstudio"
+model = "qwen3.5-35b-a3b"
+label = "qwen"
+base_url = "http://max.local:1234"
 
 [[matrix.model]]
 provider = "openrouter"
@@ -285,7 +300,7 @@ label = "sonnet"
 # inherits campaign [session] as-is
 ```
 
-For the `glm` model, the effective session options are `allowed_commands = ["python", "uv", "git"]`, `temperature = 0.0`, and `extra_body = { chat_template_kwargs = { enable_thinking = false } }`. The `sonnet` model inherits only the campaign defaults.
+For the `qwen` model, the effective session options are `allowed_commands = ["python", "uv", "git"]`, `temperature = 0.0`, and `base_url = "http://max.local:1234"`. For the `glm` model, the effective options include the campaign defaults plus `extra_body`. The `sonnet` model inherits only the campaign defaults.
 
 ### Allowed options
 

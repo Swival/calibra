@@ -65,10 +65,7 @@ uv run calibra validate experiments/my-first-campaign.toml
 This checks the config structure, discovers tasks, expands the matrix, and reports the trial plan:
 
 ```
-Config OK
-  Variants: 1
-  Tasks: 1
-  Trials: 3 (1 variants × 1 tasks × 3 repeats)
+Config valid. 1 variants x 1 tasks x 3 repeats = 3 trials.
 ```
 
 ## 4. Dry run

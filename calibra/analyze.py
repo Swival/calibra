@@ -271,17 +271,149 @@ def load_metrics(results_dir: Path) -> dict[str, list[TrialMetrics]]:
     return by_variant
 
 
-def analyze_campaign(results_dir: str | Path, output_dir: str | Path | None = None):
-    results_dir = Path(results_dir)
-    if output_dir is None:
-        output_dir = results_dir
-    output_dir = Path(output_dir)
+def _is_campaign_dir(d: Path) -> bool:
+    """A campaign dir has trial JSONs in immediate subdirs (task dirs)."""
+    for sub in d.iterdir():
+        if sub.is_dir():
+            for f in sub.iterdir():
+                if f.is_file() and f.suffix == ".json" and f.name != "summary.json":
+                    return True
+    return False
 
+
+def _find_campaigns(results_dir: Path) -> list[Path]:
+    """Return campaign dirs under results_dir, or [results_dir] if it is one."""
+    if _is_campaign_dir(results_dir):
+        return [results_dir]
+    campaigns = sorted(d for d in results_dir.iterdir() if d.is_dir() and _is_campaign_dir(d))
+    return campaigns
+
+
+def _print_results(
+    campaign_name: str,
+    all_metrics: list[TrialMetrics],
+    rankings: list[AggregateMetrics],
+    front: list[AggregateMetrics],
+    aggregates: list[AggregateMetrics],
+    output_dir: Path,
+):
+    """Print a verbose human-readable summary to stdout."""
+    tasks = sorted({m.task for m in all_metrics})
+    variants = sorted({m.variant_label for m in all_metrics})
+    n_passed = sum(1 for m in all_metrics if m.verified is True)
+    n_failed = sum(1 for m in all_metrics if m.verified is False)
+    n_unknown = sum(1 for m in all_metrics if m.verified is None)
+
+    print(f"\n{'=' * 70}")
+    print(f"  Campaign: {campaign_name}")
+    print(f"{'=' * 70}")
+    print(f"  {len(all_metrics)} trials | {len(variants)} variants | {len(tasks)} tasks")
+    print(f"  {n_passed} passed | {n_failed} failed | {n_unknown} unverified")
+
+    # Per-task pass rates
+    by_task: dict[str, list[TrialMetrics]] = {}
+    for m in all_metrics:
+        by_task.setdefault(m.task, []).append(m)
+
+    print("\n  Tasks:")
+    max_task_len = max(len(t) for t in tasks) if tasks else 0
+    for task in tasks:
+        tms = by_task[task]
+        passed = sum(1 for m in tms if m.verified is True)
+        total = len(tms)
+        rate = passed / total if total else 0
+        bar_len = 20
+        filled = round(rate * bar_len)
+        bar = "\u2588" * filled + "\u2591" * (bar_len - filled)
+        print(f"    {task:<{max_task_len}}  {bar}  {passed}/{total} ({rate:.0%})")
+
+    # Rankings table
+    print("\n  Rankings:")
+    max_var_len = max(len(a.variant_label) for a in rankings)
+    header_var = "Variant".ljust(max_var_len)
+    print(
+        f"    {'#':>3}  {header_var}  {'Pass':>6}  {'Turns':>6}  {'Tokens':>8}  {'LLM Time':>8}  {'Wall Time':>9}"
+    )
+    print(
+        f"    {'---':>3}  {'-' * max_var_len}  {'------':>6}  {'------':>6}  {'--------':>8}  {'--------':>8}  {'---------':>9}"
+    )
+    for i, a in enumerate(rankings, 1):
+        print(
+            f"    {i:>3}  {a.variant_label:<{max_var_len}}  {a.pass_rate:>5.0%}"
+            f"  {a.turns.mean:>6.1f}  {a.prompt_tokens_est.mean:>8.0f}"
+            f"  {a.llm_time_s.mean:>7.1f}s  {a.wall_time_s.mean:>8.1f}s"
+        )
+
+    # Per-variant task breakdown
+    print("\n  Pass/fail by variant and task:")
+    task_col_width = max(3, *(len(t) for t in tasks)) if tasks else 3
+    # Header
+    var_col = " " * max_var_len
+    header_parts = [f"    {var_col}  "]
+    for t in tasks:
+        header_parts.append(f"{t:>{task_col_width}}")
+    print("  ".join(header_parts))
+    # Rows
+    by_variant_task: dict[str, dict[str, list[TrialMetrics]]] = {}
+    for m in all_metrics:
+        by_variant_task.setdefault(m.variant_label, {}).setdefault(m.task, []).append(m)
+    for a in rankings:
+        parts = [f"    {a.variant_label:<{max_var_len}}  "]
+        vt = by_variant_task.get(a.variant_label, {})
+        for t in tasks:
+            tms = vt.get(t, [])
+            passed = sum(1 for m in tms if m.verified is True)
+            total = len(tms)
+            if total == 0:
+                cell = "-"
+            elif passed == total:
+                cell = f"{passed}/{total}"
+            elif passed == 0:
+                cell = f"0/{total}"
+            else:
+                cell = f"{passed}/{total}"
+            parts.append(f"{cell:>{task_col_width}}")
+        print("  ".join(parts))
+
+    # Pareto front
+    if front:
+        print("\n  Pareto front (pass rate vs tokens):")
+        for a in front:
+            print(
+                f"    {a.variant_label}: {a.pass_rate:.0%} pass, "
+                f"{a.prompt_tokens_est.mean:.0f} tokens"
+            )
+
+    # Efficiency
+    print("\n  Efficiency:")
+    for a in rankings:
+        print(
+            f"    {a.variant_label:<{max_var_len}}  "
+            f"score/1k tok: {a.score_per_1k_tokens:.4f}  "
+            f"pass/min: {a.pass_rate_per_minute:.4f}"
+        )
+
+    # Warnings
+    any_warnings = False
+    for a in aggregates:
+        warnings = flag_instabilities(a)
+        if warnings:
+            if not any_warnings:
+                print("\n  Warnings:")
+                any_warnings = True
+            for w in warnings:
+                print(f"    {a.variant_label}: {w}")
+
+    print(f"\n  Output: {output_dir}/summary.{{json,md,csv}}")
+    print()
+
+
+def _analyze_single(results_dir: Path, output_dir: Path):
+    """Analyze a single campaign directory. Returns True if results were found."""
     by_variant = load_metrics(results_dir)
 
     if not by_variant:
-        print(f"No trial reports found in {results_dir}")
-        return
+        return False
 
     all_metrics = [m for ms in by_variant.values() for m in ms]
 
@@ -294,4 +426,31 @@ def analyze_campaign(results_dir: str | Path, output_dir: str | Path | None = No
     write_summary_json(output_dir, aggregates, all_metrics)
     write_summary_md(output_dir, rankings, front, aggregates)
     write_summary_csv(output_dir, aggregates)
-    print(f"Analysis written to {output_dir}")
+
+    _print_results(results_dir.name, all_metrics, rankings, front, aggregates, output_dir)
+    return True
+
+
+def analyze_campaign(results_dir: str | Path, output_dir: str | Path | None = None):
+    results_dir = Path(results_dir)
+    base_output = Path(output_dir) if output_dir is not None else None
+
+    campaigns = _find_campaigns(results_dir)
+    if not campaigns:
+        print(f"No trial reports found in {results_dir}")
+        return
+
+    single = len(campaigns) == 1 and campaigns[0] == results_dir
+
+    found_any = False
+    for campaign_dir in campaigns:
+        if single:
+            out = base_output if base_output else campaign_dir
+        else:
+            out = (base_output / campaign_dir.name) if base_output else campaign_dir
+        out.mkdir(parents=True, exist_ok=True)
+        if _analyze_single(campaign_dir, out):
+            found_any = True
+
+    if not found_any:
+        print(f"No trial reports found in {results_dir}")

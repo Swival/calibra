@@ -307,6 +307,32 @@ def test_session_per_model_parsed(tmp_path):
     assert campaign.models[0].session_options == {"verbose": True}
 
 
+def test_session_per_model_inline(tmp_path):
+    toml = _session_toml(model_session='base_url = "http://localhost:1234"')
+    config = _write_campaign(tmp_path, toml)
+    campaign = load_campaign(config)
+    assert campaign.models[0].session_options == {"base_url": "http://localhost:1234"}
+
+
+def test_session_per_model_inline_merged_with_session(tmp_path):
+    toml = _session_toml(
+        model_session='base_url = "http://localhost:1234"\nsession = { verbose = true }'
+    )
+    config = _write_campaign(tmp_path, toml)
+    campaign = load_campaign(config)
+    assert campaign.models[0].session_options == {
+        "base_url": "http://localhost:1234",
+        "verbose": True,
+    }
+
+
+def test_session_per_model_session_subtable_wins(tmp_path):
+    toml = _session_toml(model_session="verbose = false\nsession = { verbose = true }")
+    config = _write_campaign(tmp_path, toml)
+    campaign = load_campaign(config)
+    assert campaign.models[0].session_options["verbose"] is True
+
+
 def test_session_empty_defaults(tmp_path):
     toml = _session_toml()
     config = _write_campaign(tmp_path, toml)

@@ -186,25 +186,17 @@ Comparison is useful for model upgrades (run the same tasks with a new model ver
 
 ### Comparison output
 
-The comparison produces a JSON report:
+The comparison writes a `comparison.md` Markdown file to the output directory (defaults to the parent of `dir_a`):
 
-```json
-{
-  "name_a": "before",
-  "name_b": "after",
-  "comparisons": [
-    {
-      "variant_label": "sonnet_default_none_none_base",
-      "pass_rate_a": 0.7,
-      "pass_rate_b": 0.85,
-      "delta_pass": 0.15,
-      "effect_size": 0.42,
-      "effect_magnitude": "medium",
-      "tokens_mean_a": 2100.0,
-      "tokens_mean_b": 1850.0
-    }
-  ]
-}
+```markdown
+# Campaign Comparison
+
+A: before
+B: after
+
+| Variant                       | Pass A | Pass B | Delta  | Effect        | Tokens A | Tokens B |
+| ----------------------------- | ------ | ------ | ------ | ------------- | -------- | -------- |
+| sonnet_default_none_none_base | 70.0%  | 85.0%  | +15.0% | 0.42 (medium) | 2100     | 1850     |
 ```
 
 ## Config hashing and reproducibility

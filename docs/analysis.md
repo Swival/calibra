@@ -51,20 +51,22 @@ This prints a formatted table using Rich:
 
 Calibra extracts these metrics from each trial report:
 
-| Metric              | Description                                                       |
-| ------------------- | ----------------------------------------------------------------- |
-| `outcome`           | Agent result: `"success"`, `"error"`, `"exhausted"`               |
-| `verified`          | Whether `verify.sh` passed (true/false/null if no verifier)       |
-| `turns`             | Number of conversation turns                                      |
-| `tool_calls_total`  | Total tool invocations                                            |
-| `tool_calls_failed` | Tool invocations that returned errors                             |
-| `llm_time_s`        | Time spent in LLM API calls                                       |
-| `tool_time_s`       | Time spent executing tools                                        |
-| `wall_time_s`       | Total wall-clock time                                             |
-| `compactions`       | Number of context compactions (long conversations)                |
-| `prompt_tokens_est` | Estimated total prompt tokens                                     |
-| `failure_class`     | `"infra"`, `"provider"`, `"tool"`, `"timeout"`, `"task"`, or null |
-| `tool_usage`        | Per-tool breakdown of succeeded/failed calls                      |
+| Metric                    | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `outcome`                 | Agent result: `"success"`, `"error"`, `"exhausted"`               |
+| `verified`                | Whether `verify.sh` passed (true/false/null if no verifier)       |
+| `turns`                   | Number of conversation turns                                      |
+| `tool_calls_total`        | Total tool invocations                                            |
+| `tool_calls_failed`       | Tool invocations that returned errors                             |
+| `llm_time_s`              | Time spent in LLM API calls                                       |
+| `tool_time_s`             | Time spent executing tools                                        |
+| `wall_time_s`             | Total wall-clock time                                             |
+| `compactions`             | Number of context compactions (long conversations)                |
+| `prompt_tokens_est`       | Estimated total prompt tokens                                     |
+| `failure_class`           | `"infra"`, `"provider"`, `"tool"`, `"timeout"`, `"task"`, or null |
+| `tool_usage`              | Per-tool breakdown of succeeded/failed calls                      |
+| `skills_used`             | List of skills invoked during the trial                           |
+| `guardrail_interventions` | Number of guardrail interventions                                 |
 
 ## Per-variant aggregation
 

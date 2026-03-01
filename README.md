@@ -1,3 +1,5 @@
+![Calibra Logo](.media/logo.png)
+
 # Calibra
 
 A benchmarking harness for coding agents. Built for [Swival](https://github.com/swival/swival).
