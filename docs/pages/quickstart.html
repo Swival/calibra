@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quick Start — Calibra</title>
+    <meta name="description" content="Quick Start — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Quick Start — Calibra">
+    <meta property="og:description" content="Quick Start — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/quickstart.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Quick Start — Calibra">
+    <meta name="twitter:description" content="Quick Start — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html" class="active">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="quick-start">Quick Start</h1>
+<p>This guide walks you through creating a task, writing a campaign config, running it, and viewing the results.</p>
+<h2 id="1-create-a-task">1. Create a task</h2>
+<p>Tasks live in a directory (typically <code>tasks/</code>). Each task needs at minimum a prompt file and a workspace directory.</p>
+<pre><code class="language-bash">mkdir -p tasks/hello-world/env
+</code></pre>
+<p>Write the prompt:</p>
+<pre><code class="language-bash">cat &gt; tasks/hello-world/task.md &lt;&lt; 'EOF'
+Write a Python script called `hello.py` that prints &quot;Hello, World!&quot; to stdout.
+EOF
+</code></pre>
+<p>Add a verification script:</p>
+<pre><code class="language-bash">cat &gt; tasks/hello-world/verify.sh &lt;&lt; 'EOF'
+#!/bin/sh
+python3 hello.py | grep -qx &quot;Hello, World!&quot;
+EOF
+chmod +x tasks/hello-world/verify.sh
+</code></pre>
+<p>The <code>env/</code> directory is empty here because the task starts from a blank workspace. For tasks that need starter files, you'd put them in <code>env/</code>.</p>
+<h2 id="2-write-a-campaign-config">2. Write a campaign config</h2>
+<p>Campaign configs are TOML files. Create <code>experiments/my-first-campaign.toml</code>:</p>
+<pre><code class="language-toml">[campaign]
+name = &quot;my-first-campaign&quot;
+description = &quot;Testing a single model on hello-world&quot;
+tasks_dir = &quot;tasks&quot;
+repeat = 3
+timeout_s = 120
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-sonnet-4.6&quot;
+label = &quot;sonnet&quot;
+
+[[matrix.agent_instructions]]
+label = &quot;default&quot;
+agents_md = &quot;AGENTS.md&quot;
+</code></pre>
+<p>This is the simplest possible campaign: one model, one set of instructions, no skills, no MCP, no environment overlay. The three optional dimensions (skills, mcp, environment) get default values of <code>none</code>, <code>none</code>, and <code>base</code>. Setting <code>repeat = 3</code> runs each variant+task combination three times to measure consistency.</p>
+<h2 id="3-validate-the-config">3. Validate the config</h2>
+<p>Before running, check that everything is wired up correctly:</p>
+<pre><code class="language-bash">uv run calibra validate experiments/my-first-campaign.toml
+</code></pre>
+<p>This checks the config structure, discovers tasks, expands the matrix, and reports the trial plan:</p>
+<pre><code>Config valid. 1 variants x 1 tasks x 3 repeats = 3 trials.
+</code></pre>
+<h2 id="4-dry-run">4. Dry run</h2>
+<p>See exactly what would execute without running anything:</p>
+<pre><code class="language-bash">uv run calibra run experiments/my-first-campaign.toml --dry-run
+</code></pre>
+<p>This prints each trial that would be executed: task name, variant label, and repeat index.</p>
+<h2 id="5-run-the-campaign">5. Run the campaign</h2>
+<pre><code class="language-bash">uv run calibra run experiments/my-first-campaign.toml --workers 2
+</code></pre>
+<p>Calibra sets up an isolated workspace for each trial, runs the Swival agent with the configured model, executes <code>verify.sh</code> to check the result, and writes a JSON report. Results land in <code>results/my-first-campaign/hello-world/</code>.</p>
+<h2 id="6-inspect-a-trial">6. Inspect a trial</h2>
+<p>Look at a single trial result:</p>
+<pre><code class="language-bash">uv run calibra show results/my-first-campaign/hello-world/sonnet_default_none_none_base_0.json
+</code></pre>
+<p>This shows a formatted summary with the task name, variant, outcome, verification status, wall time, turns, tool calls, and more. The file naming convention is <code>{variant_label}_{repeat_index}.json</code>, where the variant label joins dimension labels with underscores: <code>model_agent_skills_mcp_environment</code>.</p>
+<h2 id="7-analyze-the-campaign">7. Analyze the campaign</h2>
+<p>Generate aggregate reports:</p>
+<pre><code class="language-bash">uv run calibra analyze results/my-first-campaign
+</code></pre>
+<p>This produces three files in <code>results/my-first-campaign/</code>: <code>summary.json</code> (machine-readable aggregate metrics), <code>summary.md</code> (a human-readable Markdown report with rankings), and <code>summary.csv</code> (spreadsheet-friendly format).</p>
+<h2 id="8-view-in-the-web-dashboard">8. View in the web dashboard</h2>
+<p>For a richer experience, launch the interactive dashboard:</p>
+<pre><code class="language-bash">uv run calibra web serve results/ --open
+</code></pre>
+<p>This starts a local server at <code>http://127.0.0.1:8118</code> and opens your browser. You'll see your campaign with charts, heatmaps, and drill-down views.</p>
+<h2 id="next-steps">Next steps</h2>
+<p>From here, read <a href="tasks.html">Writing Tasks</a> to learn how to build more complex tasks, <a href="configuration.html">Campaign Configuration</a> to explore all config options, <a href="running.html">Running Campaigns</a> for parallelism, filtering, and resuming, or <a href="advanced.html">Advanced Topics</a> for constraints, sampling modes, and budgets.</p>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

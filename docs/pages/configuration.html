@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Configuration — Calibra</title>
+    <meta name="description" content="Configuration — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Configuration — Calibra">
+    <meta property="og:description" content="Configuration — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/configuration.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Configuration — Calibra">
+    <meta name="twitter:description" content="Configuration — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html" class="active">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="campaign-configuration">Campaign Configuration</h1>
+<p>Campaigns are defined in TOML files, typically stored in <code>experiments/</code>.</p>
+<h2 id="minimal-config">Minimal config</h2>
+<p>The smallest working config needs a campaign name, a tasks directory, one model, and one set of agent instructions:</p>
+<pre><code class="language-toml">[campaign]
+name = &quot;minimal&quot;
+tasks_dir = &quot;tasks&quot;
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-sonnet-4.6&quot;
+label = &quot;sonnet&quot;
+
+[[matrix.agent_instructions]]
+label = &quot;default&quot;
+agents_md = &quot;AGENTS.md&quot;
+</code></pre>
+<p>The three optional dimensions (skills, mcp, environment) get defaults: <code>skills=none</code>, <code>mcp=none</code>, <code>environment=base</code>.</p>
+<h2 id="campaign-section">[campaign] section</h2>
+<p>Top-level campaign settings.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td><em>required</em></td>
+<td>Campaign identifier. Used in output paths.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Human-readable description.</td>
+</tr>
+<tr>
+<td><code>tasks_dir</code></td>
+<td>string</td>
+<td><em>required</em></td>
+<td>Path to the tasks directory (relative to config file or absolute).</td>
+</tr>
+<tr>
+<td><code>repeat</code></td>
+<td>int</td>
+<td><code>1</code></td>
+<td>Number of times to repeat each variant+task pair. Higher values give better statistical confidence.</td>
+</tr>
+<tr>
+<td><code>max_turns</code></td>
+<td>int</td>
+<td><code>50</code></td>
+<td>Maximum turns the agent can take per trial.</td>
+</tr>
+<tr>
+<td><code>timeout_s</code></td>
+<td>int</td>
+<td><code>300</code></td>
+<td>Wall-clock timeout per trial in seconds.</td>
+</tr>
+<tr>
+<td><code>seed</code></td>
+<td>int</td>
+<td><code>42</code></td>
+<td>Base seed for deterministic trial seeds.</td>
+</tr>
+</tbody>
+</table>
+<p>Here's an example using most of these fields:</p>
+<pre><code class="language-toml">[campaign]
+name = &quot;model-shootout&quot;
+description = &quot;Compare three models on Python coding tasks&quot;
+tasks_dir = &quot;tasks&quot;
+repeat = 5
+max_turns = 30
+timeout_s = 180
+seed = 123
+</code></pre>
+<h2 id="matrix-dimensions">Matrix dimensions</h2>
+<p>The matrix defines what you're testing. Calibra takes the Cartesian product of all dimensions to produce variants.</p>
+<h3 id="matrixmodel-required">[[matrix.model]] (required)</h3>
+<p>At least one model entry is required. Each entry specifies a provider, a model identifier, and a label. You can also attach per-model session options either directly on the model entry or via an inline <code>session</code> sub-table (see <a href="#session-options">Session options</a> below).</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>provider</code></td>
+<td>string</td>
+<td>Provider name (e.g., <code>"anthropic"</code>, <code>"openrouter"</code>)</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string</td>
+<td>Model identifier (e.g., <code>"claude-sonnet-4.6"</code>)</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td>Unique label within models (used in variant names and file paths)</td>
+</tr>
+<tr>
+<td><code>session</code></td>
+<td>table</td>
+<td>Per-model session option overrides (optional, see below)</td>
+</tr>
+<tr>
+<td><em>any session option</em></td>
+<td>varies</td>
+<td>Session options can also be placed directly on the model entry</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-sonnet-4.6&quot;
+label = &quot;sonnet&quot;
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-haiku-4.5&quot;
+label = &quot;haiku&quot;
+
+[[matrix.model]]
+provider = &quot;lmstudio&quot;
+model = &quot;qwen3.5-35b-a3b&quot;
+label = &quot;qwen&quot;
+base_url = &quot;http://max.local:1234&quot;
+
+[[matrix.model]]
+provider = &quot;openrouter&quot;
+model = &quot;openai/gpt-5.3-codex&quot;
+label = &quot;codex&quot;
+session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } }
+</code></pre>
+<p>Session options placed directly on the model entry (like <code>base_url</code> above) are merged with the <code>session</code> sub-table. If the same key appears in both, the <code>session</code> sub-table wins.</p>
+<h3 id="matrixagent_instructions-required">[[matrix.agent_instructions]] (required)</h3>
+<p>At least one entry is required. This controls the <code>AGENTS.md</code> file copied into each trial workspace.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td>Unique label within instructions</td>
+</tr>
+<tr>
+<td><code>agents_md</code></td>
+<td>string</td>
+<td>Path to the AGENTS.md file</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[[matrix.agent_instructions]]
+label = &quot;default&quot;
+agents_md = &quot;agents/default.md&quot;
+
+[[matrix.agent_instructions]]
+label = &quot;detailed&quot;
+agents_md = &quot;agents/detailed-instructions.md&quot;
+</code></pre>
+<h3 id="matrixskills-optional">[[matrix.skills]] (optional)</h3>
+<p>Skill directories available to the agent. If omitted, defaults to a single entry with label <code>"none"</code> and no skills.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td></td>
+<td>Unique label within skills</td>
+</tr>
+<tr>
+<td><code>skills_dirs</code></td>
+<td>list[string]</td>
+<td><code>[]</code></td>
+<td>Paths to skill directories</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[[matrix.skills]]
+label = &quot;none&quot;
+skills_dirs = []
+
+[[matrix.skills]]
+label = &quot;full&quot;
+skills_dirs = [&quot;skills/coding&quot;, &quot;skills/testing&quot;]
+</code></pre>
+<h3 id="matrixmcp-optional">[[matrix.mcp]] (optional)</h3>
+<p>MCP server configurations. If omitted, defaults to a single entry with label <code>"none"</code> and no config.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td></td>
+<td>Unique label within mcp</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Path to MCP config file (TOML or JSON)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[[matrix.mcp]]
+label = &quot;none&quot;
+config = &quot;&quot;
+
+[[matrix.mcp]]
+label = &quot;with-search&quot;
+config = &quot;mcp/search-server.toml&quot;
+</code></pre>
+<h3 id="matrixenvironment-optional">[[matrix.environment]] (optional)</h3>
+<p>File overlays applied to the workspace after copying <code>env/</code> files. If omitted, defaults to a single entry with label <code>"base"</code> and no overlay.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>label</code></td>
+<td>string</td>
+<td></td>
+<td>Unique label within environments</td>
+</tr>
+<tr>
+<td><code>overlay</code></td>
+<td>string</td>
+<td><code>""</code></td>
+<td>Path to overlay directory</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[[matrix.environment]]
+label = &quot;base&quot;
+overlay = &quot;&quot;
+
+[[matrix.environment]]
+label = &quot;with-config&quot;
+overlay = &quot;envs/production-config&quot;
+</code></pre>
+<p>Files in the overlay directory are copied on top of the workspace, overwriting any files from <code>env/</code> that have the same name. The overlay is applied after <code>env/</code> but before <code>AGENTS.md</code>.</p>
+<h2 id="variant-labels">Variant labels</h2>
+<p>Each variant gets a label by joining dimension labels with underscores in a fixed order: <code>{model}_{agent_instructions}_{skills}_{mcp}_{environment}</code>. So with <code>model=sonnet</code>, <code>agent_instructions=default</code>, <code>skills=full</code>, <code>mcp=none</code>, <code>environment=base</code>, the resulting label is <code>sonnet_default_full_none_base</code>. These labels are used in file paths, API endpoints, and filter expressions.</p>
+<h2 id="reviewer-section">[reviewer] section</h2>
+<p>Enables Swival's reviewer feature. When configured, Calibra runs trials via the <code>swival</code> CLI instead of the Session API, passing <code>--reviewer</code> and <code>--report</code> flags. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, <code>verify.sh</code> is skipped — the reviewer determines pass/fail.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command</code></td>
+<td>string</td>
+<td><em>required</em></td>
+<td>Shell command for the reviewer executable</td>
+</tr>
+<tr>
+<td><code>max_rounds</code></td>
+<td>int</td>
+<td><code>5</code></td>
+<td>Maximum retry rounds (0 = run reviewer once, no retries)</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[reviewer]
+command = &quot;./review.sh&quot;
+max_rounds = 3
+</code></pre>
+<p>The <code>command</code> is parsed with <code>shlex.split</code>, so arguments with spaces must be quoted. The first token is resolved as an executable (via <code>which</code> or relative to the config file directory). If the <code>[reviewer]</code> section is present, <code>command</code> must be provided — an empty section is an error.</p>
+<p>Reviewer verdict semantics differ from Swival's defaults for benchmarking purposes:
+- <strong>Accepted</strong> (exit 0): <code>verified = true</code>
+- <strong>Rejected at max rounds</strong> (exit 1): <code>verified = false</code> (Swival would accept as-is)
+- <strong>Reviewer error</strong> (exit 2+): <code>verified = null</code> (unverified; Swival would accept as-is)</p>
+<p>Trial reports include <code>review_rounds</code> (from Swival's stats) and <code>reviewer_verdict</code> (<code>"accepted"</code>, <code>"rejected"</code>, or <code>"error"</code>) in the <code>calibra</code> metadata block.</p>
+<h2 id="budget-section">[budget] section</h2>
+<p>Controls total resource usage across all trials.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_total_tokens</code></td>
+<td>int</td>
+<td><code>0</code> (disabled)</td>
+<td>Cancel remaining trials after this many tokens</td>
+</tr>
+<tr>
+<td><code>max_cost_usd</code></td>
+<td>float</td>
+<td><code>0.0</code> (disabled)</td>
+<td>Cancel remaining trials after this cost</td>
+</tr>
+<tr>
+<td><code>require_price_coverage</code></td>
+<td>bool</td>
+<td><code>false</code></td>
+<td>Require <code>prices.toml</code> entries for all models</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[budget]
+max_cost_usd = 50.0
+require_price_coverage = true
+</code></pre>
+<p>When a budget limit is hit, Calibra cancels all remaining trials and reports which limit was exceeded.</p>
+<h3 id="pricestoml">prices.toml</h3>
+<p>If you use budget tracking or <code>require_price_coverage</code>, create a <code>prices.toml</code> file alongside your campaign config:</p>
+<pre><code class="language-toml">[prices]
+&quot;anthropic/claude-sonnet-4.6&quot; = 3.0
+&quot;anthropic/claude-haiku-4.5&quot; = 0.25
+&quot;openrouter/openai/gpt-5.3-codex&quot; = 1.25
+</code></pre>
+<p>Keys are <code>"provider/model"</code> strings. Values are cost per 1,000 tokens. Calibra converts these to <code>(provider, model)</code> tuples internally.</p>
+<h2 id="retry-section">[retry] section</h2>
+<p>Controls retry behavior per failure class. Each failure class has its own retry limit.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>infra</code></td>
+<td>int</td>
+<td><code>2</code></td>
+<td>Retries for infrastructure errors (OS, permissions)</td>
+</tr>
+<tr>
+<td><code>provider</code></td>
+<td>int</td>
+<td><code>3</code></td>
+<td>Retries for provider errors (rate limits, 429/502/503)</td>
+</tr>
+<tr>
+<td><code>tool</code></td>
+<td>int</td>
+<td><code>1</code></td>
+<td>Retries for tool errors</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Retries for timeouts</td>
+</tr>
+<tr>
+<td><code>task</code></td>
+<td>int</td>
+<td><code>0</code></td>
+<td>Retries for task failures (wrong answer)</td>
+</tr>
+<tr>
+<td><code>backoff_base_s</code></td>
+<td>float</td>
+<td><code>1.0</code></td>
+<td>Base seconds for exponential backoff</td>
+</tr>
+<tr>
+<td><code>backoff_max_s</code></td>
+<td>float</td>
+<td><code>60.0</code></td>
+<td>Maximum backoff seconds</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[retry]
+provider = 5
+timeout = 1
+backoff_base_s = 2.0
+backoff_max_s = 120.0
+</code></pre>
+<p>Backoff formula: <code>min(base * 2^(attempt-1), max)</code> seconds between retries.</p>
+<p>See <a href="advanced.html">Advanced Topics</a> for details on failure classification.</p>
+<h2 id="sampling-section">[sampling] section</h2>
+<p>Controls how many variants to actually run from the full matrix.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mode</code></td>
+<td>string</td>
+<td><code>"full"</code></td>
+<td>Sampling mode: <code>"full"</code>, <code>"random"</code>, or <code>"ablation"</code></td>
+</tr>
+<tr>
+<td><code>max_variants</code></td>
+<td>int</td>
+<td><code>0</code> (unlimited)</td>
+<td>Maximum number of variants to run</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-toml">[sampling]
+mode = &quot;ablation&quot;
+max_variants = 20
+</code></pre>
+<p>See <a href="advanced.html">Advanced Topics</a> for details on each sampling mode.</p>
+<h2 id="constraints-section">[[constraints]] section</h2>
+<p>Constraints exclude specific variant combinations from the matrix. Each constraint has a <code>when</code> table (conditions that must all match) and an <code>exclude</code> table (additional dimensions to check). A variant is excluded only if it matches both <code>when</code> and <code>exclude</code>.</p>
+<pre><code class="language-toml">[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+</code></pre>
+<p>This removes all variants where <code>model=haiku</code> AND <code>skills=full</code>. Useful when the full skill set might be too complex for a smaller model.</p>
+<p>Multiple constraints can be stacked:</p>
+<pre><code class="language-toml">[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+
+[[constraints]]
+when = { environment = &quot;production&quot; }
+exclude = { mcp = &quot;none&quot; }
+</code></pre>
+<h2 id="session-options">[session] options</h2>
+<p>The <code>[session]</code> table lets you pass additional parameters to Swival's <code>Session</code> constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings. Campaign-wide defaults go in a top-level <code>[session]</code> table, while per-model overrides go either directly on the <code>[[matrix.model]]</code> entry or in an inline <code>session</code> sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like <code>extra_body</code> combine rather than replace.</p>
+<pre><code class="language-toml">[session]
+allowed_commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
+temperature = 0.0
+
+[[matrix.model]]
+provider = &quot;lmstudio&quot;
+model = &quot;qwen3.5-35b-a3b&quot;
+label = &quot;qwen&quot;
+base_url = &quot;http://max.local:1234&quot;
+
+[[matrix.model]]
+provider = &quot;openrouter&quot;
+model = &quot;z-ai/glm-5&quot;
+label = &quot;glm&quot;
+session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } }
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-sonnet-4.6&quot;
+label = &quot;sonnet&quot;
+# inherits campaign [session] as-is
+</code></pre>
+<p>For the <code>qwen</code> model, the effective session options are <code>allowed_commands = ["python", "uv", "git"]</code>, <code>temperature = 0.0</code>, and <code>base_url = "http://max.local:1234"</code>. For the <code>glm</code> model, the effective options include the campaign defaults plus <code>extra_body</code>. The <code>sonnet</code> model inherits only the campaign defaults.</p>
+<h3 id="allowed-options">Allowed options</h3>
+<p>Any <code>Session.__init__</code> parameter that isn't managed by Calibra internally:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api_key</code></td>
+<td>string</td>
+<td>Provider API key (overrides environment variable)</td>
+</tr>
+<tr>
+<td><code>base_url</code></td>
+<td>string</td>
+<td>Custom API endpoint</td>
+</tr>
+<tr>
+<td><code>max_output_tokens</code></td>
+<td>int</td>
+<td>Max tokens per LLM response</td>
+</tr>
+<tr>
+<td><code>max_context_tokens</code></td>
+<td>int</td>
+<td>Max context window size</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td>float</td>
+<td>Sampling temperature</td>
+</tr>
+<tr>
+<td><code>top_p</code></td>
+<td>float</td>
+<td>Nucleus sampling threshold</td>
+</tr>
+<tr>
+<td><code>allowed_commands</code></td>
+<td>list[str]</td>
+<td>Whitelist of shell commands the agent may run</td>
+</tr>
+<tr>
+<td><code>yolo</code></td>
+<td>bool</td>
+<td>Skip command approval (see below)</td>
+</tr>
+<tr>
+<td><code>verbose</code></td>
+<td>bool</td>
+<td>Enable verbose agent output</td>
+</tr>
+<tr>
+<td><code>no_skills</code></td>
+<td>bool</td>
+<td>Disable skills loading</td>
+</tr>
+<tr>
+<td><code>allowed_dirs</code></td>
+<td>list[str]</td>
+<td>Directories the agent may read and write</td>
+</tr>
+<tr>
+<td><code>allowed_dirs_ro</code></td>
+<td>list[str]</td>
+<td>Directories the agent may only read</td>
+</tr>
+<tr>
+<td><code>sandbox</code></td>
+<td>string</td>
+<td>Sandbox mode</td>
+</tr>
+<tr>
+<td><code>sandbox_session</code></td>
+<td>string</td>
+<td>Sandbox session identifier</td>
+</tr>
+<tr>
+<td><code>sandbox_strict_read</code></td>
+<td>bool</td>
+<td>Strict read sandboxing</td>
+</tr>
+<tr>
+<td><code>sandbox_auto_session</code></td>
+<td>bool</td>
+<td>Auto-create sandbox sessions</td>
+</tr>
+<tr>
+<td><code>read_guard</code></td>
+<td>bool</td>
+<td>Enable read guards</td>
+</tr>
+<tr>
+<td><code>proactive_summaries</code></td>
+<td>bool</td>
+<td>Enable proactive context summaries</td>
+</tr>
+<tr>
+<td><code>extra_body</code></td>
+<td>dict</td>
+<td>Extra fields passed to the LLM API request body</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rejected-options">Rejected options</h3>
+<p>These parameters are set by Calibra internally and cannot appear in session options:</p>
+<p><code>base_dir</code>, <code>provider</code>, <code>model</code>, <code>max_turns</code>, <code>seed</code>, <code>history</code>, <code>skills_dir</code>, <code>mcp_servers</code>, <code>config_dir</code>.</p>
+<h3 id="blocked-options">Blocked options</h3>
+<p><code>system_prompt</code>, <code>no_system_prompt</code>, and <code>no_instructions</code> are unconditionally blocked because they conflict with the agent instructions dimension.</p>
+<h3 id="yolo-and-allowed_commands">yolo and allowed_commands</h3>
+<p>By default, Calibra sets <code>yolo=true</code> so the agent runs without interactive command approval. When you set <code>allowed_commands</code>, Calibra automatically flips <code>yolo</code> to <code>false</code> so the allowlist takes effect. If you explicitly set both <code>allowed_commands</code> and <code>yolo = true</code>, the allowlist becomes a no-op. Calibra will warn about this but not reject it.</p>
+<h3 id="no_skills-guard">no_skills guard</h3>
+<p>Setting <code>no_skills = true</code> is allowed only when all skills variants in the matrix have empty <code>skills_dirs</code>. If any skills variant has actual directories, <code>no_skills</code> would silently neutralize the skills dimension, so Calibra rejects it.</p>
+<h3 id="type-validation">Type validation</h3>
+<p>Session option values are type-checked against Swival's <code>Session.__init__</code> annotations. For example, <code>temperature</code> must be a number, <code>allowed_commands</code> must be a list of strings, and <code>verbose</code> must be a boolean. Mismatches produce a clear error at config validation time.</p>
+<h2 id="complete-example">Complete example</h2>
+<p>Here's a realistic campaign config using most features:</p>
+<pre><code class="language-toml">[campaign]
+name = &quot;model-shootout&quot;
+description = &quot;Compare models on Python coding tasks with different instruction styles&quot;
+tasks_dir = &quot;tasks&quot;
+repeat = 5
+max_turns = 40
+timeout_s = 240
+seed = 42
+
+[session]
+allowed_commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
+temperature = 0.0
+
+[budget]
+max_cost_usd = 100.0
+require_price_coverage = true
+
+[retry]
+provider = 5
+timeout = 1
+backoff_base_s = 2.0
+
+[sampling]
+mode = &quot;full&quot;
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-sonnet-4.6&quot;
+label = &quot;sonnet&quot;
+
+[[matrix.model]]
+provider = &quot;anthropic&quot;
+model = &quot;claude-haiku-4.5&quot;
+label = &quot;haiku&quot;
+
+[[matrix.model]]
+provider = &quot;openrouter&quot;
+model = &quot;openai/gpt-5.3-codex&quot;
+label = &quot;codex&quot;
+session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } }
+
+[[matrix.agent_instructions]]
+label = &quot;minimal&quot;
+agents_md = &quot;agents/minimal.md&quot;
+
+[[matrix.agent_instructions]]
+label = &quot;detailed&quot;
+agents_md = &quot;agents/detailed.md&quot;
+
+[[matrix.skills]]
+label = &quot;none&quot;
+skills_dirs = []
+
+[[matrix.skills]]
+label = &quot;full&quot;
+skills_dirs = [&quot;skills/all&quot;]
+
+[[matrix.environment]]
+label = &quot;base&quot;
+
+[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+
+# 3 models × 2 instructions × 2 skills × 1 mcp × 1 environment = 12 variants
+# minus 2 (haiku+full constraint) = 10 variants
+# × 5 repeats × N tasks = total trials
+</code></pre>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

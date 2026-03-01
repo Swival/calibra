@@ -24,6 +24,7 @@ calibra = "calibra.cli:main"
 
 [dependency-groups]
 dev = ["pytest", "ruff"]
+website = ["markdown", "pillow"]
 
 [tool.ruff]
 line-length = 100

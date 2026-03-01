@@ -1,4 +1,4 @@
-.PHONY: install test lint format check clean
+.PHONY: install test lint format check website clean
 
 install:
 	uv sync
@@ -14,6 +14,9 @@ format:
 
 check: lint
 	uv run ruff format --check calibra/ tests/
+
+website:
+	uv run --group website python build.py
 
 clean:
 	rm -rf .pytest_cache __pycache__ calibra/__pycache__ tests/__pycache__

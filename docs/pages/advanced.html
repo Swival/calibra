@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Advanced Topics — Calibra</title>
+    <meta name="description" content="Advanced Topics — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Advanced Topics — Calibra">
+    <meta property="og:description" content="Advanced Topics — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/advanced.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Advanced Topics — Calibra">
+    <meta name="twitter:description" content="Advanced Topics — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html" class="active">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="advanced-topics">Advanced Topics</h1>
+<h2 id="constraints">Constraints</h2>
+<p>Constraints let you exclude specific variant combinations from the matrix. This is useful when certain combinations don't make sense, for example a small model paired with an expensive skill set.</p>
+<h3 id="how-constraints-work">How constraints work</h3>
+<p>Each constraint has two parts: <code>when</code> (conditions that must all match) and <code>exclude</code> (additional conditions that, combined with <code>when</code>, trigger exclusion). A variant is excluded only if it matches both. Think of it as: "when this is true, also exclude variants where that is true."</p>
+<pre><code class="language-toml">[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+</code></pre>
+<p>This removes variants where model is "haiku" AND skills is "full". Haiku with other skill levels is kept, and other models with full skills are kept.</p>
+<h3 id="multiple-conditions">Multiple conditions</h3>
+<p>Both <code>when</code> and <code>exclude</code> support multiple conditions using AND logic:</p>
+<pre><code class="language-toml">[[constraints]]
+when = { model = &quot;haiku&quot;, environment = &quot;production&quot; }
+exclude = { skills = &quot;full&quot;, mcp = &quot;heavy&quot; }
+</code></pre>
+<p>This only excludes variants matching all four conditions simultaneously.</p>
+<h3 id="stacking-constraints">Stacking constraints</h3>
+<p>Multiple constraint blocks are independent: a variant is excluded if it matches any single constraint:</p>
+<pre><code class="language-toml"># Don't run haiku with full skills
+[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+
+# Don't run any model without MCP in production
+[[constraints]]
+when = { environment = &quot;production&quot; }
+exclude = { mcp = &quot;none&quot; }
+</code></pre>
+<h3 id="verifying-constraints">Verifying constraints</h3>
+<p>Use <code>--dry-run</code> to see which variants survive constraint filtering:</p>
+<pre><code class="language-bash">uv run calibra run experiments/config.toml --dry-run
+</code></pre>
+<h2 id="sampling-modes">Sampling modes</h2>
+<p>When a full matrix has too many variants, sampling reduces the set without manually picking.</p>
+<h3 id="full-mode-default">Full mode (default)</h3>
+<p>Runs every variant. If <code>max_variants</code> is set, it caps the list at the first N after alphabetical sort:</p>
+<pre><code class="language-toml">[sampling]
+mode = &quot;full&quot;
+max_variants = 50  # 0 = unlimited
+</code></pre>
+<h3 id="random-mode">Random mode</h3>
+<p>Randomly samples from the full variant list using a seeded RNG, so the selection is deterministic. The seed comes from the campaign's <code>seed</code> field, meaning the same config always selects the same subset:</p>
+<pre><code class="language-toml">[sampling]
+mode = &quot;random&quot;
+max_variants = 20
+</code></pre>
+<h3 id="ablation-mode">Ablation mode</h3>
+<p>Tests one dimension at a time. It starts with a baseline (the first variant alphabetically), then includes only variants that differ from the baseline in exactly one dimension:</p>
+<pre><code class="language-toml">[sampling]
+mode = &quot;ablation&quot;
+</code></pre>
+<p>This is useful for isolating the effect of each dimension. If your baseline is <code>sonnet_default_none_none_base</code>, ablation includes <code>haiku_default_none_none_base</code> (model differs), <code>codex_default_none_none_base</code> (model differs), <code>sonnet_detailed_none_none_base</code> (instructions differ), <code>sonnet_default_full_none_base</code> (skills differ), and so on. But it would not include <code>haiku_detailed_none_none_base</code>, because two dimensions differ from the baseline.</p>
+<h2 id="budget-management">Budget management</h2>
+<p>For expensive campaigns, budget limits prevent runaway costs.</p>
+<h3 id="token-budget">Token budget</h3>
+<p>Cancel the campaign after consuming a total number of tokens:</p>
+<pre><code class="language-toml">[budget]
+max_total_tokens = 5000000  # 5M tokens
+</code></pre>
+<h3 id="cost-budget">Cost budget</h3>
+<p>Cancel after reaching a dollar amount (requires price data):</p>
+<pre><code class="language-toml">[budget]
+max_cost_usd = 50.0
+require_price_coverage = true
+</code></pre>
+<h3 id="price-configuration">Price configuration</h3>
+<p>Create a <code>prices.toml</code> file in the same directory as your campaign config:</p>
+<pre><code class="language-toml">[prices]
+&quot;anthropic/claude-sonnet-4.6&quot; = 3.0
+&quot;anthropic/claude-haiku-4.5&quot; = 0.25
+&quot;openrouter/openai/gpt-5.3-codex&quot; = 1.25
+</code></pre>
+<p>Keys are <code>"provider/model"</code> strings matching your matrix model entries. Values are cost per 1,000 tokens. When <code>require_price_coverage = true</code>, validation fails if any model in the matrix is missing from prices.toml.</p>
+<h3 id="what-happens-when-budget-is-exceeded">What happens when budget is exceeded</h3>
+<p>When a limit is hit, the current trial finishes, all pending trials in the thread pool are cancelled, and the budget tracker records which limit was hit and how much was used. Already-completed trial results are preserved. You can resume after adjusting the budget:</p>
+<pre><code class="language-bash">uv run calibra run experiments/config.toml --resume
+</code></pre>
+<h2 id="failure-classification">Failure classification</h2>
+<p>When a trial fails, Calibra classifies the failure to determine whether to retry and how long to wait. Classifications are checked in priority order:</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Class</th>
+<th>Trigger</th>
+<th>Typical cause</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>timeout</code></td>
+<td>Wall-clock timeout exceeded</td>
+<td>Task too hard, model stuck in a loop</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>infra</code></td>
+<td>OSError, PermissionError</td>
+<td>Disk full, network down, file permissions</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>provider</code></td>
+<td>Rate limit, 429, 502, 503, auth errors</td>
+<td>API overloaded, bad credentials</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>tool</code></td>
+<td>Tools failed, error outcome with tool failures</td>
+<td>Broken tool, missing dependency</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>task</code></td>
+<td>Wrong answer, exhausted turns</td>
+<td>Agent gave incorrect solution</td>
+</tr>
+</tbody>
+</table>
+<p>The first matching class wins. If nothing matches, the trial is considered successful.</p>
+<h3 id="cli-mode-failure-classification">CLI mode failure classification</h3>
+<p>When a reviewer is configured, trials run via the <code>swival</code> CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as <code>timeout</code>. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first — this preserves tool-failure detection from <code>tool_calls_failed &gt; 0</code>. However, if the report says <code>task</code> but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to <code>provider</code>. When no report is available, stderr pattern matching is the sole classification input. Since <code>--quiet</code> is always passed, stderr may be empty in some failure cases, resulting in a <code>task</code> classification as a fallback.</p>
+<h3 id="retry-behavior">Retry behavior</h3>
+<p>Each failure class has its own retry count:</p>
+<pre><code class="language-toml">[retry]
+infra = 2      # retry infra errors twice
+provider = 3   # retry provider errors three times
+tool = 1       # retry tool errors once
+timeout = 0    # don't retry timeouts
+task = 0       # don't retry wrong answers
+</code></pre>
+<p>Between retries, Calibra waits using exponential backoff: <code>min(backoff_base_s × 2^(attempt-1), backoff_max_s)</code>. With the defaults (base=1.0, max=60.0), that's 1s after the first failure, 2s after the second, 4s after the third, 8s after the fourth, and so on up to 60s.</p>
+<h3 id="when-to-retry-what">When to retry what</h3>
+<p>Provider errors are almost always worth retrying; rate limits and server errors are transient. Infrastructure errors are usually worth retrying too, since network hiccups and temporary disk issues tend to resolve themselves. Tool errors are sometimes worth retrying if the tool was temporarily unavailable. Timeouts are rarely worth retrying, because if the model can't finish in time, retrying usually gives the same result. Task failures (wrong answers) are usually not worth retrying unless you're specifically measuring variance. A wrong answer is a signal, not an error.</p>
+<h2 id="trial-seed-determinism">Trial seed determinism</h2>
+<p>Calibra computes a deterministic seed for each trial using <code>SHA256("base_seed:task_name:variant_label:repeat_index")</code>, taking the first 4 bytes as an integer. This means the same (task, variant, repeat) triple always gets the same seed, changing the base seed changes all trial seeds, adding a new task or variant doesn't affect existing seeds, and results are reproducible given the same seed and model.</p>
+<h2 id="comparing-campaigns">Comparing campaigns</h2>
+<p>Compare two campaign runs to measure the effect of a change:</p>
+<pre><code class="language-bash">uv run calibra compare results/before results/after
+</code></pre>
+<h3 id="what-gets-compared">What gets compared</h3>
+<p>Calibra finds variants present in both campaigns and computes the pass rate delta (<code>after - before</code>, where positive means improvement), Cliff's delta (a non-parametric effect size measure with magnitudes: negligible for |d| &lt; 0.147, small for &lt; 0.33, medium for &lt; 0.474, and large for &gt;= 0.474), and mean token usage in each campaign.</p>
+<h3 id="use-cases">Use cases</h3>
+<p>Comparison is useful for model upgrades (run the same tasks with a new model version and compare pass rates), instruction tuning (test different AGENTS.md files and see which improves results), skill evaluation (add a skill set and measure its impact), and regression testing (re-run after changing the agent framework to verify no regressions).</p>
+<h3 id="comparison-output">Comparison output</h3>
+<p>The comparison writes a <code>comparison.md</code> Markdown file to the output directory (defaults to the parent of <code>dir_a</code>):</p>
+<pre><code class="language-markdown"># Campaign Comparison
+
+A: before
+B: after
+
+| Variant                       | Pass A | Pass B | Delta  | Effect        | Tokens A | Tokens B |
+| ----------------------------- | ------ | ------ | ------ | ------------- | -------- | -------- |
+| sonnet_default_none_none_base | 70.0%  | 85.0%  | +15.0% | 0.42 (medium) | 2100     | 1850     |
+</code></pre>
+<h2 id="config-hashing-and-reproducibility">Config hashing and reproducibility</h2>
+<p>Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using <code>--resume</code>, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content, so cosmetic changes (whitespace, comments) don't affect it, but any semantic change does.</p>
+<h2 id="working-with-large-matrices">Working with large matrices</h2>
+<p>A matrix of 5 models × 3 instructions × 3 skills × 2 MCP × 2 environments gives you 180 variants. With 5 repeats and 10 tasks, that's 9,000 trials. Here are some strategies for managing scale.</p>
+<p>Start with ablation mode to identify which dimensions actually matter:</p>
+<pre><code class="language-toml">[sampling]
+mode = &quot;ablation&quot;
+</code></pre>
+<p>Use constraints to eliminate known-bad combinations:</p>
+<pre><code class="language-toml">[[constraints]]
+when = { model = &quot;haiku&quot; }
+exclude = { skills = &quot;full&quot; }
+</code></pre>
+<p>Run subsets to iterate quickly using <code>--filter</code>:</p>
+<pre><code class="language-bash"># Test one model first
+uv run calibra run config.toml --filter &quot;model=sonnet&quot; --workers 4
+
+# Then add another
+uv run calibra run config.toml --filter &quot;model=haiku&quot; --resume
+</code></pre>
+<p>Put a safety net on cost:</p>
+<pre><code class="language-toml">[budget]
+max_cost_usd = 200.0
+</code></pre>
+<p>Scale up concurrency to reduce wall time:</p>
+<pre><code class="language-bash">uv run calibra run config.toml --workers 8
+</code></pre>
+<p>And always use <code>--resume</code> after the first run so completed trials aren't re-executed:</p>
+<pre><code class="language-bash">uv run calibra run config.toml --resume --workers 4
+</code></pre>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Analyzing Results — Calibra</title>
+    <meta name="description" content="Analyzing Results — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Analyzing Results — Calibra">
+    <meta property="og:description" content="Analyzing Results — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/analysis.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Analyzing Results — Calibra">
+    <meta name="twitter:description" content="Analyzing Results — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html" class="active">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="analyzing-results">Analyzing Results</h1>
+<p>After a campaign finishes, Calibra can aggregate trial data into statistical summaries, rankings, and reports.</p>
+<h2 id="running-analysis">Running analysis</h2>
+<pre><code class="language-bash">uv run calibra analyze results/model-shootout
+</code></pre>
+<p>This reads all trial JSON files in the campaign directory and produces three output files: <code>summary.json</code> (machine-readable aggregate data), <code>summary.md</code> (a human-readable report with tables), and <code>summary.csv</code> (spreadsheet format).</p>
+<p>You can write outputs to a different directory:</p>
+<pre><code class="language-bash">uv run calibra analyze results/model-shootout --output reports/
+</code></pre>
+<h2 id="inspecting-a-single-trial">Inspecting a single trial</h2>
+<p>Before looking at aggregates, you might want to examine individual trials:</p>
+<pre><code class="language-bash">uv run calibra show results/model-shootout/hello-world/sonnet_minimal_none_none_base_0.json
+</code></pre>
+<p>This prints a formatted table using Rich:</p>
+<pre><code>┌────────────────────────────────────┐
+│ Task:     hello-world              │
+│ Variant:  sonnet_minimal_none_none │
+│ Outcome:  success                  │
+│ Verified: true                     │
+│ Time:     12.3s                    │
+├──────────────┬─────────────────────┤
+│ Turns        │ 3                   │
+│ LLM Calls    │ 3                   │
+│ Tool Calls   │ 2 (0 failed)        │
+│ LLM Time     │ 8.1s                │
+│ Tool Time    │ 2.4s                │
+│ Compactions  │ 0                   │
+├──────────────┴─────────────────────┤
+│ Tool Usage                         │
+│   write_file: 1 ok, 0 fail         │
+│   run_command: 1 ok, 0 fail        │
+└────────────────────────────────────┘
+</code></pre>
+<h2 id="metrics-collected">Metrics collected</h2>
+<p>Calibra extracts these metrics from each trial report:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>outcome</code></td>
+<td>Agent result: <code>"success"</code>, <code>"error"</code>, <code>"exhausted"</code></td>
+</tr>
+<tr>
+<td><code>verified</code></td>
+<td>Whether verification passed (true/false/null). Set by <code>verify.sh</code> or reviewer verdict.</td>
+</tr>
+<tr>
+<td><code>turns</code></td>
+<td>Number of conversation turns</td>
+</tr>
+<tr>
+<td><code>tool_calls_total</code></td>
+<td>Total tool invocations</td>
+</tr>
+<tr>
+<td><code>tool_calls_failed</code></td>
+<td>Tool invocations that returned errors</td>
+</tr>
+<tr>
+<td><code>llm_time_s</code></td>
+<td>Time spent in LLM API calls</td>
+</tr>
+<tr>
+<td><code>tool_time_s</code></td>
+<td>Time spent executing tools</td>
+</tr>
+<tr>
+<td><code>wall_time_s</code></td>
+<td>Total wall-clock time</td>
+</tr>
+<tr>
+<td><code>compactions</code></td>
+<td>Number of context compactions (long conversations)</td>
+</tr>
+<tr>
+<td><code>prompt_tokens_est</code></td>
+<td>Estimated total prompt tokens</td>
+</tr>
+<tr>
+<td><code>failure_class</code></td>
+<td><code>"infra"</code>, <code>"provider"</code>, <code>"tool"</code>, <code>"timeout"</code>, <code>"task"</code>, or null</td>
+</tr>
+<tr>
+<td><code>tool_usage</code></td>
+<td>Per-tool breakdown of succeeded/failed calls</td>
+</tr>
+<tr>
+<td><code>skills_used</code></td>
+<td>List of skills invoked during the trial</td>
+</tr>
+<tr>
+<td><code>guardrail_interventions</code></td>
+<td>Number of guardrail interventions</td>
+</tr>
+<tr>
+<td><code>review_rounds</code></td>
+<td>Number of reviewer retry rounds (0 when no reviewer configured)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="per-variant-aggregation">Per-variant aggregation</h2>
+<p>Calibra groups trials by variant label and computes several statistics.</p>
+<h3 id="pass-rate">Pass rate</h3>
+<p>The pass rate is simply the fraction of trials where <code>verified</code> is true:</p>
+<pre><code>pass_rate = count(verified == true) / total_trials
+</code></pre>
+<p>Rounded to 4 decimal places.</p>
+<h3 id="statistical-summaries">Statistical summaries</h3>
+<p>For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places. The <code>review_rounds</code> stat summary is only included when at least one trial in the variant has review_rounds &gt; 0.</p>
+<p>The 95% confidence interval uses the formula <code>mean ± 1.96 × (std / sqrt(n))</code>.</p>
+<h3 id="derived-metrics">Derived metrics</h3>
+<p>Two efficiency metrics are computed from the aggregates. <strong>score_per_1k_tokens</strong> is <code>pass_rate × 1000 / tokens.mean</code>, which tells you how many tasks you solve per 1,000 tokens spent. <strong>pass_rate_per_minute</strong> is <code>pass_rate × 60 / wall_time.mean</code>, which tells you how many tasks you solve per minute of wall time.</p>
+<h3 id="outcome-counts">Outcome counts</h3>
+<p>A breakdown of how many trials ended in each outcome state:</p>
+<pre><code class="language-json">&quot;outcome_counts&quot;: {
+  &quot;success&quot;: 8,
+  &quot;error&quot;: 1,
+  &quot;exhausted&quot;: 1
+}
+</code></pre>
+<h2 id="rankings">Rankings</h2>
+<p>Variants are ranked by pass rate first (higher is better), then by tokens (fewer is better), then by turns (fewer is better), and finally by LLM time (less is better). The ranking tells you which variant configuration is most effective overall.</p>
+<h2 id="pareto-front">Pareto front</h2>
+<p>The Pareto front identifies variants that are not dominated by any other variant on two dimensions: pass rate (higher is better) and token usage (lower is better). A variant is on the Pareto front if no other variant has both a higher pass rate and lower token usage. These are the "efficient" configurations: you can't improve one metric without sacrificing the other.</p>
+<h2 id="instability-warnings">Instability warnings</h2>
+<p>Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 0.5 on turns, LLM time, or token usage, which indicates inconsistent behavior. Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing <code>repeat</code> in your config.</p>
+<h2 id="weighted-pass-rate">Weighted pass rate</h2>
+<p>When computing an overall campaign pass rate across variants with different trial counts, Calibra uses a weighted average:</p>
+<pre><code>weighted_pass_rate = sum(variant_pass_rate × variant_n_trials) / sum(variant_n_trials)
+</code></pre>
+<p>This prevents a variant with 2 trials from having the same influence as one with 20.</p>
+<h2 id="report-formats">Report formats</h2>
+<h3 id="summaryjson">summary.json</h3>
+<p>The full machine-readable output:</p>
+<pre><code class="language-json">{
+  &quot;variants&quot;: [
+    {
+      &quot;variant_label&quot;: &quot;sonnet_minimal_none_none_base&quot;,
+      &quot;n_trials&quot;: 15,
+      &quot;pass_rate&quot;: 0.8667,
+      &quot;outcome_counts&quot;: {&quot;success&quot;: 13, &quot;error&quot;: 1, &quot;exhausted&quot;: 1},
+      &quot;turns&quot;: {&quot;mean&quot;: 4.2, &quot;median&quot;: 4.0, &quot;std&quot;: 1.1, ...},
+      &quot;tool_calls_total&quot;: {&quot;mean&quot;: 3.8, ...},
+      &quot;wall_time_s&quot;: {&quot;mean&quot;: 14.5, ...},
+      &quot;prompt_tokens_est&quot;: {&quot;mean&quot;: 2100.0, ...},
+      &quot;review_rounds&quot;: {&quot;mean&quot;: 1.5, &quot;median&quot;: 1.0, &quot;std&quot;: 0.8, &quot;...&quot;: &quot;...&quot;},
+      &quot;score_per_1k_tokens&quot;: 0.413,
+      &quot;pass_rate_per_minute&quot;: 3.585
+    }
+  ],
+  &quot;trials&quot;: [
+    {
+      &quot;task&quot;: &quot;hello-world&quot;,
+      &quot;variant_label&quot;: &quot;sonnet_minimal_none_none_base&quot;,
+      &quot;repeat&quot;: 0,
+      &quot;outcome&quot;: &quot;success&quot;,
+      &quot;verified&quot;: true,
+      &quot;turns&quot;: 3,
+      &quot;wall_time_s&quot;: 12.3,
+      ...
+    }
+  ]
+}
+</code></pre>
+<h3 id="summarymd">summary.md</h3>
+<p>A Markdown report with variant rankings (sorted by rank), Pareto-efficient variants highlighted, instability warnings, and per-task pass rates.</p>
+<h3 id="summarycsv">summary.csv</h3>
+<p>A flat table with one row per variant and columns for key metrics, suitable for importing into spreadsheets or data tools. When any variant has reviewer data, a <code>review_rounds_mean</code> column is included.</p>
+<h2 id="comparing-campaigns">Comparing campaigns</h2>
+<p>To compare two campaign runs (for example, before and after a change):</p>
+<pre><code class="language-bash">uv run calibra compare results/run-a results/run-b
+</code></pre>
+<p>This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size with magnitude classification (negligible, small, medium, large), and a token usage comparison. See <a href="advanced.html#comparing-campaigns">Advanced Topics</a> for details.</p>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

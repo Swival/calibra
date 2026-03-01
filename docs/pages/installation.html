@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Installation — Calibra</title>
+    <meta name="description" content="Installation — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Installation — Calibra">
+    <meta property="og:description" content="Installation — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/installation.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Installation — Calibra">
+    <meta name="twitter:description" content="Installation — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html" class="active">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="installation">Installation</h1>
+<p>Calibra requires Python 3.13 or later, <a href="https://docs.astral.sh/uv/">uv</a> as its package manager, and <a href="https://github.com/anthropics/swival">Swival</a> as the underlying agent framework.</p>
+<h2 id="install-calibra">Install Calibra</h2>
+<p>Clone the repository and install with <code>uv</code>:</p>
+<pre><code class="language-bash">git clone &lt;repo-url&gt; calibra
+cd calibra
+uv sync
+</code></pre>
+<p>This installs the core package with two dependencies: <code>swival</code> (the agent framework) and <code>rich</code> (for terminal formatting).</p>
+<h2 id="optional-extras">Optional extras</h2>
+<p>Calibra ships with two optional dependency groups. For chart generation in reports, install <code>matplotlib</code>:</p>
+<pre><code class="language-bash">uv sync --extra charts
+</code></pre>
+<p>For the interactive web dashboard (FastAPI, Uvicorn, Jinja2):</p>
+<pre><code class="language-bash">uv sync --extra web
+</code></pre>
+<p>Or grab everything at once:</p>
+<pre><code class="language-bash">uv sync --extra charts --extra web
+</code></pre>
+<h2 id="development-dependencies">Development dependencies</h2>
+<p>If you plan to contribute or run the test suite, install the dev group to get <code>pytest</code> and <code>ruff</code>:</p>
+<pre><code class="language-bash">uv sync --group dev
+</code></pre>
+<h2 id="verify-the-installation">Verify the installation</h2>
+<p>Make sure the CLI works:</p>
+<pre><code class="language-bash">uv run calibra --help
+</code></pre>
+<p>You should see a list of subcommands: <code>validate</code>, <code>run</code>, <code>analyze</code>, <code>show</code>, <code>compare</code>, and <code>web</code>.</p>
+<h2 id="project-structure">Project structure</h2>
+<pre><code>calibra/
+  cli.py          # CLI entrypoint
+  config.py       # TOML config parsing
+  matrix.py       # Variant expansion
+  tasks.py        # Task discovery
+  runner.py       # Trial execution
+  failure.py      # Failure classification
+  budget.py       # Token/cost tracking
+  prices.py       # Price loading
+  analyze.py      # Results aggregation
+  report.py       # Report generation
+  compare.py      # Campaign comparison
+  show.py         # Trial pretty-printing
+  utils.py        # Shared utilities
+  web/            # Web dashboard (optional)
+experiments/      # Campaign config files
+tasks/            # Task definitions
+results/          # Trial output (generated)
+</code></pre>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

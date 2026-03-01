@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Web Dashboard — Calibra</title>
+    <meta name="description" content="Web Dashboard — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Web Dashboard — Calibra">
+    <meta property="og:description" content="Web Dashboard — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/web-dashboard.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Web Dashboard — Calibra">
+    <meta name="twitter:description" content="Web Dashboard — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html" class="active">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="web-dashboard">Web Dashboard</h1>
+<p>Calibra includes an interactive web interface for browsing campaign results. It requires the <code>[web]</code> optional dependencies.</p>
+<h2 id="setup">Setup</h2>
+<p>Install the web dependencies:</p>
+<pre><code class="language-bash">uv sync --extra web
+</code></pre>
+<h2 id="launching-the-dashboard">Launching the dashboard</h2>
+<p>Point it at your results directory:</p>
+<pre><code class="language-bash">uv run calibra web serve results/ --open
+</code></pre>
+<p>This starts a local server and opens your browser. By default it runs on <code>http://127.0.0.1:8118</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code></td>
+<td><code>8118</code></td>
+<td>Port number</td>
+</tr>
+<tr>
+<td><code>--host</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Bind address</td>
+</tr>
+<tr>
+<td><code>--open</code></td>
+<td>off</td>
+<td>Automatically open browser</td>
+</tr>
+</tbody>
+</table>
+<p>To make the dashboard accessible from other machines:</p>
+<pre><code class="language-bash">uv run calibra web serve results/ --host 0.0.0.0 --port 9000
+</code></pre>
+<h2 id="pages">Pages</h2>
+<h3 id="campaign-list">Campaign list</h3>
+<p>The landing page shows all campaigns found in the results directory. Each campaign card displays the campaign name, number of variants and tasks, total trial count, overall weighted pass rate (color-coded), and the last updated timestamp. Click a campaign to drill in.</p>
+<h3 id="campaign-detail">Campaign detail</h3>
+<p>This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate. Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.</p>
+<h3 id="task-heatmap">Task heatmap</h3>
+<p>Accessible from the campaign detail page, the heatmap shows a matrix with tasks as rows and variants as columns. Each cell shows the pass rate for that task+variant pair, color-coded from green (high) to red (low). Hovering over a cell shows sample count, mean turns, and mean tokens. This view quickly reveals which tasks are hard for which variants.</p>
+<h3 id="variant-detail">Variant detail</h3>
+<p>A deep dive into a single variant's performance. You'll find aggregate stats (pass rate, mean turns, mean tokens, mean wall time), a per-task breakdown with pass rates and distributions, failure class counts showing how many trials hit each failure type, tool usage statistics, and a filterable list of every individual trial with links to the trial inspector.</p>
+<h3 id="trial-inspector">Trial inspector</h3>
+<p>View a single trial in full detail: a formatted stats table (turns, timing, tokens, etc.), tool usage breakdown, timeline of events, and a raw JSON viewer for the complete report.</p>
+<h3 id="comparison">Comparison</h3>
+<p>Compare two campaigns side by side with dropdown selectors for campaign A and campaign B, a pass rate comparison chart for common variants, a delta table showing improvement or regression for each variant, and effect size indicators.</p>
+<h2 id="static-html-export">Static HTML export</h2>
+<p>You can build a self-contained HTML file to share without running a server:</p>
+<pre><code class="language-bash">uv run calibra web build results/ --output dist/
+</code></pre>
+<p>The export bundles all data from <code>summary.json</code> files, inlines all JavaScript and CSS (Tailwind, Plotly, HTMX), and produces a single HTML file that works offline. It uses a schema version for forward compatibility. You can share the file via email, upload it to a static host, or check it into a repository.</p>
+<h2 id="rest-api">REST API</h2>
+<p>The web dashboard also exposes a JSON API for programmatic access:</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/api/campaigns</code></td>
+<td>GET</td>
+<td>List all campaigns</td>
+</tr>
+<tr>
+<td><code>/api/campaign/{name}</code></td>
+<td>GET</td>
+<td>Campaign summary data</td>
+</tr>
+<tr>
+<td><code>/api/campaign/{name}/heatmap</code></td>
+<td>GET</td>
+<td>Task-variant heatmap data</td>
+</tr>
+<tr>
+<td><code>/api/campaign/{name}/trial/{task}/{variant}/{repeat}</code></td>
+<td>GET</td>
+<td>Single trial JSON</td>
+</tr>
+<tr>
+<td><code>/api/compare?a={name}&amp;b={name}</code></td>
+<td>GET</td>
+<td>Campaign comparison</td>
+</tr>
+<tr>
+<td><code>/api/reload</code></td>
+<td>POST</td>
+<td>Force cache refresh</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash"># List campaigns
+curl http://127.0.0.1:8118/api/campaigns
+
+# Get campaign summary
+curl http://127.0.0.1:8118/api/campaign/model-shootout
+
+# Get a specific trial
+curl http://127.0.0.1:8118/api/campaign/model-shootout/trial/hello-world/sonnet_minimal_none_none_base/0
+
+# Compare two campaigns
+curl &quot;http://127.0.0.1:8118/api/compare?a=run-a&amp;b=run-b&quot;
+</code></pre>
+<h2 id="dashboard-features">Dashboard features</h2>
+<p>The web interface supports dark mode (toggle in the header, persisted in the browser), keyboard shortcuts for navigating between pages, column sorting by clicking table headers, a responsive layout that works on different screen sizes, and auto-refresh via the API.</p>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

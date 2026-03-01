@@ -1,19 +1,52 @@
-![Calibra Logo](.media/logo.png)
+<p align="center">
+  <img src=".media/logo.png" alt="Calibra" width="280">
+</p>
 
-# Calibra
+<h3 align="center">Stop guessing which models and settings are best. Measure them.</h3>
 
-A benchmarking harness for coding agents. Built for [Swival](https://github.com/swival/swival).
+<p align="center">
+Free, open-source benchmarking for coding agents.<br>
+Test models, prompts, skills, and MCP servers — side by side, at scale.
+</p>
 
-Calibra runs structured experiments to evaluate coding agents across models,
-instructions, skills, MCP servers, and environments. You define a matrix of
-configurations and a set of coding tasks, and Calibra runs every combination,
-classifies failures, retries transient errors, tracks your budget, and produces
-statistical reports. It's designed to give you reproducible, comparable results
-without manual bookkeeping.
+---
 
-## Quickstart
+Calibra is a benchmarking harness that tells you *exactly* how your coding agent performs across models, instructions, skills, MCP servers, and environments. Define a matrix, run it, and get hard numbers — pass rates, token costs, timing, failure breakdowns, and statistical rankings — all in an interactive web dashboard you can share with your team.
 
-Install:
+It works with any provider: Anthropic, OpenAI, or your own self-hosted models via LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evaluations against local models for free.
+
+Built for [Swival](https://github.com/swival/swival).
+
+## Why Calibra
+
+**You're flying blind without it.** Switching models? Adding an MCP server? Changing your agent's system prompt? You need to know if that actually made things better. Calibra gives you a controlled experiment instead of a gut feeling.
+
+- **Five-dimensional testing** — vary model, agent instructions, skills, MCP servers, and environment overlays in any combination. Calibra runs the full matrix automatically.
+- **Statistically rigorous** — repeat trials, confidence intervals, Pareto fronts, effect sizes. Not just "it seemed faster."
+- **Works with open models** — bring your own LM Studio, Ollama, or any OpenAI-compatible endpoint. Run thousands of evals for zero API cost.
+- **Completely free and open source** — no license keys, no usage limits, no telemetry.
+
+## The Web Dashboard
+
+Calibra ships with an interactive dashboard that makes results actually useful.
+
+**Campaign overview** — see pass rates, variant counts, and trial totals at a glance. KPI tiles highlight what matters: median turns, failure rate, token efficiency.
+
+**Variant rankings** — a sortable, filterable table ranked by pass rate, token cost, and speed. Instantly spot which model + skill + MCP combo wins.
+
+**Pass rate charts** — horizontal bar charts color-coded by performance. A scatter plot maps token cost against pass rate, with the Pareto front drawn on top so you can see the efficiency frontier.
+
+**Task heatmap** — a full matrix of tasks vs. variants, colored from red to teal. Click any cell to drill into that specific combination.
+
+**Variant deep dive** — per-task breakdowns with outcome dots, box plots of turn distributions, failure category pie charts (infra / provider / tool / timeout / task), and tool usage bar charts showing success vs. failure rates per tool.
+
+**Trial inspector** — a full chronological timeline of a single trial: every LLM call (with duration and token count), every tool invocation (with arguments and pass/fail), compactions, guardrail interventions, and reviewer feedback. Expand any event to see the raw details.
+
+**Campaign comparison** — pick two runs and see deltas: pass rate changes, Cliff's delta effect sizes, and a bar chart of improvements and regressions across all common variants.
+
+**Dark mode** included. The whole thing exports to **static HTML** — share results without running a server.
+
+## Quick Start
 
 ```sh
 uv sync
@@ -35,9 +68,10 @@ EOF
 chmod +x tasks/hello-world/verify.sh
 ```
 
-Write a campaign config (`experiments/first.toml`):
+Write a campaign config:
 
 ```toml
+# experiments/first.toml
 [campaign]
 name = "first"
 tasks_dir = "tasks"
@@ -52,101 +86,93 @@ provider = "anthropic"
 model = "claude-sonnet-4.6"
 label = "sonnet"
 
+[[matrix.model]]
+provider = "lmstudio"
+model = "qwen3.5-27b"
+label = "qwen3.5-local"
+base_url = "http://localhost:1234"
+
 [[matrix.agent_instructions]]
 label = "default"
 agents_md = "AGENTS.md"
 ```
 
-Validate, then run:
+Run it:
 
 ```sh
-uv run calibra validate experiments/first.toml
-uv run calibra run experiments/first.toml --workers 2
-```
-
-Analyze results:
-
-```sh
+uv run calibra run experiments/first.toml --workers 4
 uv run calibra analyze results/first
 uv run calibra web serve results/ --open
 ```
 
-## How it works
+## Features
 
-You give Calibra a TOML config that defines a **matrix** of five dimensions:
-which models to test, which agent instructions to use, which skills and MCP
-servers to enable, and which environment overlays to apply. Calibra takes the
-Cartesian product, runs each combination against each task (optionally multiple
-times), and writes structured JSON reports.
+### Matrix-Driven Experiments
 
-Each trial gets an isolated temp workspace with the task's starter files, any
-environment overlay, and the agent instructions. Calibra computes a
-deterministic seed per trial so results are reproducible. Failures are
-classified (infra, provider, tool, timeout, task) and retried according to
-per-class limits. A budget tracker can cancel remaining trials when token or
-cost limits are hit.
+Define variants across five dimensions and Calibra tests every combination:
 
-After running, `calibra analyze` aggregates metrics per variant with means,
-medians, confidence intervals, rankings, and a Pareto front. `calibra compare`
-does side-by-side campaign comparisons with effect sizes.
+| Dimension              | What it controls                                    |
+| ---------------------- | --------------------------------------------------- |
+| **model**              | Provider, model name, temperature, token limits     |
+| **agent_instructions** | The system prompt / AGENTS.md given to the agent    |
+| **skills**             | Tool sets and capabilities available to the agent   |
+| **mcp**                | MCP server configurations                           |
+| **environment**        | Workspace file overlays (different starting states) |
 
-## What it does
+Add constraints to exclude bad combinations. Use sampling modes (full, random, ablation) to manage scale. Filter at runtime with `--filter "model=sonnet,skills=full"`.
 
-**Matrix-driven experiments.** Define five dimensions (model, agent
-instructions, skills, MCP, environment) and Calibra tests every combination.
-Constraints exclude known-bad combos, and sampling modes (full, random,
-ablation) manage scale.
+### Failure Classification and Smart Retries
 
-**Session options.** Pass Swival `Session` parameters like `temperature`,
-`allowed_commands`, `extra_body`, and `api_key` at the campaign level or
-per-model. Per-model values deep-merge on top of campaign defaults, so nested
-dicts like `extra_body` combine rather than replace.
+Every failure is classified into one of five categories — infra, provider, tool, timeout, or task — each with independent retry limits and exponential backoff. Rate limits get retried automatically. Wrong answers don't.
 
-**Failure classification and retry.** Five failure classes (infra, provider,
-tool, timeout, task) with independent retry limits and exponential backoff.
-Provider rate limits get retried automatically; wrong answers don't.
+### Budget Tracking
 
-**Budget tracking.** Set token or dollar limits. When a limit is hit, in-flight
-trials finish but no new ones start. Resume later with `--resume`.
+Set token or dollar limits. Calibra cancels remaining trials when the budget is exceeded. Resume later with `--resume` and pick up right where you left off. Prices are configured per model in a simple `prices.toml`.
 
-**Verification.** Each task can include a `verify.sh` script that checks the
-agent's output. Exit code 0 means pass.
+### Statistical Analysis
 
-**Statistical analysis.** Per-variant aggregation with mean, median, standard
-deviation, p90, 95% confidence intervals. Variant ranking, Pareto front
-(pass rate vs. token cost), and instability detection.
+Per-variant aggregation with mean, median, standard deviation, p90, and 95% confidence intervals. Variant ranking by composite score. Pareto front analysis (pass rate vs. token cost). Instability detection flags unreliable results. Bootstrap CIs and permutation tests for serious comparisons.
 
-**Campaign comparison.** Compare two runs with `calibra compare`. Computes pass
-rate deltas and Cliff's delta effect sizes across common variants.
+### Campaign Comparison
 
-**Web dashboard.** An interactive FastAPI + HTMX dashboard for browsing
-campaigns, drilling into variants and trials, viewing heatmaps, and comparing
-runs. Also exports to static HTML.
+Compare two runs side by side. See pass rate deltas and Cliff's delta effect sizes across every common variant. Find out if that prompt change actually helped.
 
-## Commands
+### Reproducibility
+
+Every trial gets a deterministic seed derived from the campaign seed, task, variant, and repeat index. Same config, same results.
+
+## CLI Reference
 
 ```sh
-calibra validate <config>                    # check config without running
-calibra run <config> [--workers N] [--resume] [--filter EXPR] [--dry-run]
-calibra analyze <results_dir>                # aggregate metrics
-calibra show <report.json>                   # inspect one trial
-calibra compare <dir_a> <dir_b>              # side-by-side comparison
-calibra web serve <results_dir> [--open]     # interactive dashboard
-calibra web build <results_dir>              # static HTML export
+calibra validate <config>              # check config without running
+calibra run <config> [--workers N]     # run trials in parallel
+                     [--resume]        # skip completed trials
+                     [--filter EXPR]   # limit variants at runtime
+                     [--dry-run]       # show plan without executing
+calibra analyze <results_dir>          # aggregate metrics and write reports
+calibra show <report.json>             # inspect a single trial
+calibra compare <dir_a> <dir_b>        # side-by-side comparison
+calibra web serve <results_dir>        # launch interactive dashboard
+calibra web build <results_dir>        # export static HTML
+```
+
+## Task Format
+
+```
+tasks/my-task/
+  task.md       # prompt sent to the agent (required)
+  env/          # starter workspace files (required)
+  verify.sh     # exit-code pass/fail check (optional)
+  meta.toml     # arbitrary metadata (optional)
 ```
 
 ## Documentation
 
-- [Quick Start](docs.md/quickstart.md) -- first campaign in a few minutes
-- [Writing Tasks](docs.md/tasks.md) -- prompts, starter files, verification
-  scripts
-- [Campaign Configuration](docs.md/configuration.md) -- full TOML reference for
-  all sections and dimensions
-- [Running Campaigns](docs.md/running.md) -- parallel execution, filtering,
-  resumption
-- [Analyzing Results](docs.md/analysis.md) -- metrics, rankings, reports
-- [Web Dashboard](docs.md/web-dashboard.md) -- interactive browsing and static
-  export
-- [Advanced Topics](docs.md/advanced.md) -- constraints, sampling, budgets,
-  retries, comparisons, seed determinism
-- [CLI Reference](docs.md/cli-reference.md) -- every command and flag
+- [Quick Start](docs.md/quickstart.md)
+- [Writing Tasks](docs.md/tasks.md)
+- [Campaign Configuration](docs.md/configuration.md)
+- [Running Campaigns](docs.md/running.md)
+- [Analyzing Results](docs.md/analysis.md)
+- [Web Dashboard](docs.md/web-dashboard.md)
+- [Advanced Topics](docs.md/advanced.md)
+- [CLI Reference](docs.md/cli-reference.md)

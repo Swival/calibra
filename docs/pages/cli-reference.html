@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CLI Reference — Calibra</title>
+    <meta name="description" content="CLI Reference — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="CLI Reference — Calibra">
+    <meta property="og:description" content="CLI Reference — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/cli-reference.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="CLI Reference — Calibra">
+    <meta name="twitter:description" content="CLI Reference — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html" class="active">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="cli-reference">CLI Reference</h1>
+<pre><code>calibra &lt;command&gt; [options]
+</code></pre>
+<h2 id="calibra-validate">calibra validate</h2>
+<p>Validate a campaign configuration file without running anything.</p>
+<pre><code>calibra validate &lt;config&gt;
+</code></pre>
+<p>The <code>config</code> argument is a path to a campaign TOML file.</p>
+<p>Validation checks TOML syntax and required fields, task directory structure (that task.md exists, env/ is a directory, verify.sh is executable), uniqueness of matrix dimension labels, validity of constraint references, session option keys and types (rejecting harness-managed keys, unknown keys, and type mismatches), and price coverage if <code>require_price_coverage = true</code>.</p>
+<pre><code class="language-bash">uv run calibra validate experiments/model-shootout.toml
+</code></pre>
+<p>Output on success:</p>
+<pre><code>Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
+</code></pre>
+<hr />
+<h2 id="calibra-run">calibra run</h2>
+<p>Execute a campaign.</p>
+<pre><code>calibra run &lt;config&gt; [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs]
+</code></pre>
+<p>The <code>config</code> argument is a path to a campaign TOML file.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--workers N</code></td>
+<td><code>1</code></td>
+<td>Number of parallel worker threads</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>off</td>
+<td>Print trial plan without executing</td>
+</tr>
+<tr>
+<td><code>--filter EXPR</code></td>
+<td>none</td>
+<td>Filter variants (e.g., <code>"model=sonnet,skills=full"</code>)</td>
+</tr>
+<tr>
+<td><code>--resume</code></td>
+<td>off</td>
+<td>Skip trials with existing valid results</td>
+</tr>
+<tr>
+<td><code>--output DIR</code></td>
+<td><code>results</code></td>
+<td>Output directory for trial reports</td>
+</tr>
+<tr>
+<td><code>--keep-workdirs</code></td>
+<td>off</td>
+<td>Preserve temporary workspace directories</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash"># Basic run
+uv run calibra run experiments/config.toml
+
+# Parallel with filtering
+uv run calibra run experiments/config.toml --workers 4 --filter &quot;model=sonnet&quot;
+
+# Resume an interrupted run
+uv run calibra run experiments/config.toml --resume --workers 4
+
+# Dry run to preview
+uv run calibra run experiments/config.toml --dry-run
+
+# Debug a failing trial
+uv run calibra run experiments/config.toml --keep-workdirs --filter &quot;model=haiku&quot;
+</code></pre>
+<hr />
+<h2 id="calibra-analyze">calibra analyze</h2>
+<p>Aggregate trial results into statistical summaries.</p>
+<pre><code>calibra analyze &lt;results_dir&gt; [--output DIR]
+</code></pre>
+<p>The <code>results_dir</code> argument is a path to a campaign's results directory.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output DIR</code></td>
+<td>same as <code>results_dir</code></td>
+<td>Where to write summary files</td>
+</tr>
+</tbody>
+</table>
+<p>Produces three files: <code>summary.json</code> (full machine-readable aggregate data), <code>summary.md</code> (human-readable Markdown report), and <code>summary.csv</code> (spreadsheet format).</p>
+<pre><code class="language-bash">uv run calibra analyze results/model-shootout
+uv run calibra analyze results/model-shootout --output reports/
+</code></pre>
+<hr />
+<h2 id="calibra-show">calibra show</h2>
+<p>Pretty-print a single trial report.</p>
+<pre><code>calibra show &lt;report.json&gt;
+</code></pre>
+<p>The argument is a path to a trial JSON file. Output includes the task name, variant label, outcome, verification status, wall time, turns, LLM calls, tool calls (succeeded/failed), LLM time, tool time, compactions, and a tool usage breakdown.</p>
+<pre><code class="language-bash">uv run calibra show results/model-shootout/hello-world/sonnet_default_none_none_base_0.json
+</code></pre>
+<hr />
+<h2 id="calibra-compare">calibra compare</h2>
+<p>Compare two campaign result directories.</p>
+<pre><code>calibra compare &lt;dir_a&gt; &lt;dir_b&gt; [--output DIR]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output DIR</code></td>
+<td>parent of <code>dir_a</code></td>
+<td>Where to write comparison output</td>
+</tr>
+</tbody>
+</table>
+<p>Finds variants common to both campaigns and computes the pass rate delta (B minus A), Cliff's delta effect size and magnitude, and a token usage comparison.</p>
+<pre><code class="language-bash">uv run calibra compare results/run-v1 results/run-v2
+</code></pre>
+<hr />
+<h2 id="calibra-web-serve">calibra web serve</h2>
+<p>Launch the interactive web dashboard. Requires the <code>[web]</code> optional dependencies (<code>uv sync --extra web</code>).</p>
+<pre><code>calibra web serve &lt;results_dir&gt; [--port N] [--host ADDR] [--open]
+</code></pre>
+<p>The <code>results_dir</code> argument is the directory containing campaign result folders.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port N</code></td>
+<td><code>8118</code></td>
+<td>Port to bind</td>
+</tr>
+<tr>
+<td><code>--host ADDR</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Host address to bind</td>
+</tr>
+<tr>
+<td><code>--open</code></td>
+<td>off</td>
+<td>Open browser automatically</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash">uv run calibra web serve results/ --open
+uv run calibra web serve results/ --host 0.0.0.0 --port 9000
+</code></pre>
+<hr />
+<h2 id="calibra-web-build">calibra web build</h2>
+<p>Export a static HTML dashboard. Requires the <code>[web]</code> optional dependencies.</p>
+<pre><code>calibra web build &lt;results_dir&gt; [--output DIR]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output DIR</code></td>
+<td><code>dist/</code></td>
+<td>Output directory for static HTML</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-bash">uv run calibra web build results/ --output docs.md/dashboard/
+</code></pre>
+<hr />
+<h2 id="exit-codes">Exit codes</h2>
+<p>Calibra exits with 0 on success and 1 on error, whether that's a configuration problem (invalid TOML, missing files, bad constraints) or a runtime failure (all trials failed, budget exceeded).</p>
+<h2 id="environment-variables">Environment variables</h2>
+<p>Calibra inherits environment variables for provider authentication. The specific variables depend on which providers you use in your matrix. For example, <code>ANTHROPIC_API_KEY</code> for Anthropic models.</p>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>

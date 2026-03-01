@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Calibra — A benchmarking harness for coding agents</title>
+		<meta name="description" content="Calibra runs structured experiments to evaluate coding agents across models, instructions, skills, MCP servers, and environments. Reproducible results without manual bookkeeping.">
+
+		<meta property="og:type" content="website">
+		<meta property="og:title" content="Calibra — A benchmarking harness for coding agents">
+		<meta property="og:description" content="Run structured experiments to evaluate coding agents across models, instructions, skills, and environments.">
+		<meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+		<meta property="og:url" content="https://swival.github.io/calibra/">
+
+		<meta name="twitter:card" content="summary">
+		<meta name="twitter:title" content="Calibra — A benchmarking harness for coding agents">
+		<meta name="twitter:description" content="Run structured experiments to evaluate coding agents across models, instructions, skills, and environments.">
+		<meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+
+		<link rel="icon" href="favicon.ico">
+		<link rel="stylesheet" href="css/style.css">
+	</head>
+	<body>
+		<header class="site-header">
+			<div class="header-inner">
+				<a href="./" class="header-logo">
+					<img src="img/logo.png" alt="Calibra">
+				</a>
+				<nav class="header-nav">
+					<a href="pages/">Docs</a>
+					<a href="https://github.com/swival/calibra">GitHub</a>
+				</nav>
+			</div>
+		</header>
+
+		<main>
+			<section class="hero">
+				<h1>A benchmarking harness for coding agents</h1>
+				<p class="tagline">
+					Calibra runs structured experiments to evaluate coding agents across
+					models, instructions, skills, MCP servers, and environments.
+					Define a matrix, run every combination, get reproducible statistical
+					reports.
+					<br>
+					Built for <a href="https://swival.dev">Swival</a>. Free and open source.
+				</p>
+				<div class="terminal">
+					<div class="terminal-titlebar">
+						<span class="terminal-dot red"></span>
+						<span class="terminal-dot yellow"></span>
+						<span class="terminal-dot green"></span>
+					</div>
+					<div class="terminal-body">
+						<div><span class="prompt">$ </span><span class="cmd">uv sync</span></div>
+						<div><span class="prompt">$ </span><span class="cmd">calibra run experiments/model-shootout.toml --workers 4</span></div>
+						<div><span class="prompt">$ </span><span class="cmd">calibra analyze results/model-shootout</span></div>
+					</div>
+				</div>
+			</section>
+
+			<section class="features">
+				<div class="features-inner">
+					<h2>Why Calibra</h2>
+					<div class="features-grid">
+						<div class="feature-card">
+							<h3>Matrix-driven experiments</h3>
+							<p>Define five dimensions (model, agent instructions,
+								skills, MCP, environment) and Calibra tests every
+								combination. Constraints exclude bad combos, sampling
+								modes manage scale.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Failure classification and retry</h3>
+							<p>Five failure classes (infra, provider, tool, timeout,
+								task) with independent retry limits and exponential
+								backoff. Provider rate limits get retried automatically;
+								wrong answers don't.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Statistical analysis</h3>
+							<p>Per-variant aggregation with mean, median, standard
+								deviation, p90, 95% confidence intervals. Variant
+								ranking, Pareto front (pass rate vs. token cost),
+								and instability detection.</p>
+						</div>
+						<div class="feature-card">
+							<h3>Web dashboard</h3>
+							<p>An interactive FastAPI + HTMX dashboard for browsing
+								campaigns, drilling into variants and trials, viewing
+								heatmaps, and comparing runs. Also exports to static
+								HTML.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="quickstart">
+				<h2>Quickstart</h2>
+				<ol>
+					<li>
+						Install Calibra:
+						<pre><code>uv sync</code></pre>
+					</li>
+					<li>
+						Create a task:
+						<pre><code>mkdir -p tasks/hello-world/env
+
+cat > tasks/hello-world/task.md << 'EOF'
+Write a Python script called `hello.py` that prints "Hello, World!" to stdout.
+EOF
+
+cat > tasks/hello-world/verify.sh << 'EOF'
+#!/bin/sh
+python3 hello.py | grep -qx "Hello, World!"
+EOF
+chmod +x tasks/hello-world/verify.sh</code></pre>
+					</li>
+					<li>
+						Write a campaign config (<code>experiments/first.toml</code>):
+						<pre><code>[campaign]
+name = "first"
+tasks_dir = "tasks"
+repeat = 3
+timeout_s = 120
+
+[session]
+allowed_commands = ["python", "uv"]
+
+[[matrix.model]]
+provider = "anthropic"
+model = "claude-sonnet-4.6"
+label = "sonnet"
+
+[[matrix.agent_instructions]]
+label = "default"
+agents_md = "AGENTS.md"</code></pre>
+					</li>
+					<li>
+						Validate and run:
+						<pre><code>calibra validate experiments/first.toml
+calibra run experiments/first.toml --workers 2</code></pre>
+					</li>
+					<li>
+						Analyze results:
+						<pre><code>calibra analyze results/first
+calibra web serve results/ --open</code></pre>
+					</li>
+				</ol>
+			</section>
+		</main>
+
+		<footer class="site-footer">
+			MIT License &middot;
+			<a href="https://github.com/swival/calibra">GitHub</a>
+		</footer>
+	</body>
+</html>

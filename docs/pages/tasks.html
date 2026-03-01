@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Writing Tasks — Calibra</title>
+    <meta name="description" content="Writing Tasks — Calibra documentation">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Writing Tasks — Calibra">
+    <meta property="og:description" content="Writing Tasks — Calibra documentation">
+    <meta property="og:image" content="https://swival.github.io/calibra/img/logo.png">
+    <meta property="og:url" content="https://swival.github.io/calibra/pages/tasks.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Writing Tasks — Calibra">
+    <meta name="twitter:description" content="Writing Tasks — Calibra documentation">
+    <meta name="twitter:image" content="https://swival.github.io/calibra/img/logo.png">
+    <link rel="icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a href="../" class="header-logo">
+                <img src="../img/logo.png" alt="Calibra">
+            </a>
+            <nav class="header-nav">
+                <a href="./">Docs</a>
+                <a href="https://github.com/swival/calibra">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <div class="docs-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+<h4>Getting Started</h4>
+<ul>
+<li><a href="installation.html">Installation</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Usage</h4>
+<ul>
+<li><a href="configuration.html">Configuration</a></li>
+<li><a href="tasks.html" class="active">Writing Tasks</a></li>
+<li><a href="running.html">Running Campaigns</a></li>
+<li><a href="analysis.html">Analyzing Results</a></li>
+</ul>
+</div>
+<div class="sidebar-section">
+<h4>Reference</h4>
+<ul>
+<li><a href="web-dashboard.html">Web Dashboard</a></li>
+<li><a href="cli-reference.html">CLI Reference</a></li>
+<li><a href="advanced.html">Advanced Topics</a></li>
+</ul>
+</div>
+        </aside>
+        <article class="docs-content">
+            <h1 id="writing-tasks">Writing Tasks</h1>
+<p>Tasks are the unit of work in a Calibra campaign. Each task gives the agent a prompt, an initial workspace, and optionally a way to verify the result.</p>
+<h2 id="task-directory-structure">Task directory structure</h2>
+<pre><code>tasks/my-task/
+  task.md       # Prompt sent to the agent (required)
+  env/          # Initial workspace files (required, can be empty)
+  verify.sh     # Verification script (optional)
+  meta.toml     # Task metadata (optional)
+</code></pre>
+<h2 id="taskmd-the-prompt">task.md: the prompt</h2>
+<p>This is the exact text sent to the coding agent. Write it the way you'd describe a task to a developer: clear, specific, and self-contained.</p>
+<p>A simple generation task might look like:</p>
+<pre><code class="language-markdown">Write a Python script called `hello.py` that prints &quot;Hello, World!&quot; to stdout.
+</code></pre>
+<p>A bug fix:</p>
+<pre><code class="language-markdown">Fix the typo in main.py: 'pritn' should be 'print'.
+</code></pre>
+<p>Something more involved:</p>
+<pre><code class="language-markdown">The file `api.py` has a SQL injection vulnerability in the `get_user` function.
+The user ID parameter is interpolated directly into the query string.
+
+Fix this by using parameterized queries. Do not change the function signature
+or return type. The existing tests in `test_api.py` should still pass.
+</code></pre>
+<p>Good prompts are specific about what files to create or modify, state the expected behavior clearly, and mention constraints like "don't change the API" or "keep tests passing." Since the agent can't ask clarifying questions, avoid ambiguity.</p>
+<h2 id="env-the-workspace">env/: the workspace</h2>
+<p>The <code>env/</code> directory contains the initial files placed in the agent's working directory before it starts. It's required but can be empty for tasks where the agent creates everything from scratch.</p>
+<p>An empty workspace (agent creates files):</p>
+<pre><code>tasks/hello-world/
+  task.md
+  env/          # empty
+  verify.sh
+</code></pre>
+<p>A pre-populated workspace (agent modifies existing files):</p>
+<pre><code>tasks/fix-typo/
+  task.md
+  env/
+    main.py     # contains the typo to fix
+  verify.sh
+</code></pre>
+<p>A larger workspace:</p>
+<pre><code>tasks/refactor-api/
+  task.md
+  env/
+    src/
+      api.py
+      models.py
+      utils.py
+    tests/
+      test_api.py
+    requirements.txt
+  verify.sh
+</code></pre>
+<p>The entire <code>env/</code> tree is copied into a temporary directory for each trial, so the original files are never modified.</p>
+<h2 id="verifysh-the-verifier">verify.sh: the verifier</h2>
+<p>An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout. If <code>verify.sh</code> is not present, the trial won't have a <code>verified</code> field and pass rates can't be computed.</p>
+<p>When a campaign has a <code>[reviewer]</code> configured, <code>verify.sh</code> is skipped — the reviewer determines pass/fail instead. Tasks can include both <code>verify.sh</code> and be used with reviewer campaigns; the campaign config controls which verification method is used.</p>
+<p>Make sure the script is executable:</p>
+<pre><code class="language-bash">chmod +x tasks/my-task/verify.sh
+</code></pre>
+<p>Here's a verifier that checks output:</p>
+<pre><code class="language-bash">#!/bin/sh
+python3 hello.py | grep -qx &quot;Hello, World!&quot;
+</code></pre>
+<p>One that checks file contents:</p>
+<pre><code class="language-bash">#!/bin/sh
+! grep -q 'pritn' main.py &amp;&amp; python3 main.py
+</code></pre>
+<p>One that runs a test suite:</p>
+<pre><code class="language-bash">#!/bin/sh
+python3 -m pytest tests/ -q --tb=no
+</code></pre>
+<p>And one with multiple checks:</p>
+<pre><code class="language-bash">#!/bin/sh
+set -e
+
+# File must exist
+test -f output.json
+
+# Must be valid JSON
+python3 -c &quot;import json; json.load(open('output.json'))&quot;
+
+# Must contain expected key
+python3 -c &quot;
+import json
+data = json.load(open('output.json'))
+assert 'results' in data
+assert len(data['results']) &gt; 0
+&quot;
+</code></pre>
+<p>Use <code>set -e</code> when chaining multiple checks so the first failure stops execution. Keep verifiers fast; they have a 30-second timeout. Test your verifier manually before running a campaign. Use <code>grep -q</code> for silent matching (no output, just exit code). And avoid checking for exact formatting when the semantics are what actually matter.</p>
+<h2 id="metatoml-task-metadata">meta.toml: task metadata</h2>
+<p>An optional TOML file for arbitrary metadata about the task. Calibra loads it but doesn't enforce any schema, so you can use it however you like: categorization, difficulty ratings, tags, or any other annotations.</p>
+<pre><code class="language-toml">[meta]
+difficulty = &quot;easy&quot;
+category = &quot;generation&quot;
+language = &quot;python&quot;
+estimated_turns = 3
+
+[tags]
+skills = [&quot;file-creation&quot;, &quot;stdout&quot;]
+</code></pre>
+<p>The metadata is available in trial reports and can be useful for post-hoc analysis.</p>
+<h2 id="task-discovery">Task discovery</h2>
+<p>Calibra discovers tasks by scanning the <code>tasks_dir</code> specified in your campaign config. The scan is alphabetical, and every subdirectory must be a valid task. If any task fails validation, the entire campaign is rejected.</p>
+<p>A task is valid when <code>task.md</code> exists and is non-empty, <code>env/</code> exists and is a directory, and (if present) <code>verify.sh</code> is executable. You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of <code>tasks_dir</code>).</p>
+<h2 id="real-world-task-examples">Real-world task examples</h2>
+<h3 id="code-generation">Code generation</h3>
+<pre><code>tasks/fibonacci/
+  task.md       →  &quot;Write fib.py that prints the first 20 Fibonacci numbers,
+                     one per line.&quot;
+  env/          →  (empty)
+  verify.sh     →  python3 fib.py | head -5 | grep -qx &quot;0\n1\n1\n2\n3&quot;
+</code></pre>
+<h3 id="bug-fixing">Bug fixing</h3>
+<pre><code>tasks/off-by-one/
+  task.md       →  &quot;The function count_words in counter.py has an off-by-one
+                     error. Fix it so the tests pass.&quot;
+  env/
+    counter.py  →  (buggy implementation)
+    test_counter.py → (tests that expose the bug)
+  verify.sh     →  python3 -m pytest test_counter.py -q --tb=no
+</code></pre>
+<h3 id="refactoring">Refactoring</h3>
+<pre><code>tasks/extract-function/
+  task.md       →  &quot;The process_data function in etl.py is too long.
+                     Extract the validation logic into a separate
+                     validate_record function. Keep all tests passing.&quot;
+  env/
+    etl.py
+    test_etl.py
+  verify.sh     →  python3 -m pytest test_etl.py -q --tb=no &amp;&amp;
+                    grep -q 'def validate_record' etl.py
+</code></pre>
+<h3 id="multi-file-tasks">Multi-file tasks</h3>
+<pre><code>tasks/add-endpoint/
+  task.md       →  &quot;Add a DELETE /users/{id} endpoint to the Flask app.
+                     It should return 204 on success and 404 if the user
+                     doesn't exist. Add tests.&quot;
+  env/
+    app.py
+    models.py
+    test_app.py
+    requirements.txt
+  verify.sh     →  pip install -r requirements.txt -q &amp;&amp;
+                    python3 -m pytest test_app.py -q --tb=short
+</code></pre>
+        </article>
+    </div>
+    <footer class="site-footer">
+        MIT License &middot;
+        <a href="https://github.com/swival/calibra">GitHub</a>
+    </footer>
+</body>
+</html>
