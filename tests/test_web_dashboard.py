@@ -311,10 +311,15 @@ class TestServerWarnings:
         assert 'id="warnings-list"' in r.text
 
 
+def _export_campaign_html(campaign_dir):
+    """Build export and return the campaign detail page HTML."""
+    out = build_single_campaign(campaign_dir)
+    return (out / "campaign" / campaign_dir.name / "index.html").read_text(), out
+
+
 class TestExportKPIs:
     def test_kpi_tiles_in_export(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert 'id="kpi-tiles"' in html
         assert 'id="kpi-turns"' in html
         assert 'id="kpi-failure"' in html
@@ -324,72 +329,61 @@ class TestExportKPIs:
 
 class TestExportCharts:
     def test_plotly_script_tag(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "plotly-3.4.0.min.js" in html
 
     def test_plotly_vendored_asset(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        assert (out / "assets" / "plotly-3.4.0.min.js").is_file()
+        _, out = _export_campaign_html(multi_variant_dir)
+        assert (out / "static" / "vendor" / "plotly-3.4.0.min.js").is_file()
 
     def test_chart_containers_in_export(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
-        assert 'id="chart-pass-rate"' in html
-        assert 'id="chart-efficiency"' in html
+        html, _ = _export_campaign_html(multi_variant_dir)
+        assert "chart-pass-rate" in html
+        assert "chart-efficiency" in html
 
     def test_plotly_newplot_calls(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "Plotly.newPlot('chart-pass-rate'" in html
         assert "Plotly.newPlot('chart-efficiency'" in html
 
     def test_pareto_front_code(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "Pareto front" in html
         assert "pareto" in html
 
 
 class TestExportWarnings:
     def test_warnings_js_in_export(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "warnings-panel" in html
         assert "warnings-list" in html
         assert "high variability" in html
         assert "fewer than 3 repeats" in html
 
     def test_high_cv_trigger(self, high_cv_dir):
-        out = build_single_campaign(high_cv_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(high_cv_dir)
         assert "warnings-panel" in html
-        # The JS will show warnings for high CV; check the code detects CV > 1.0
         assert "std / mean > 1.0" in html
 
     def test_low_repeat_trigger(self, low_repeat_dir):
-        out = build_single_campaign(low_repeat_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(low_repeat_dir)
         assert "n_trials) < 3" in html
 
 
 class TestExportSortableTable:
     def test_sort_columns_in_export(self, multi_variant_dir):
         """Sort column identifiers appear in JS code that builds headers."""
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         for col in ("pass_rate", "turns", "tokens", "variant_label", "score_1k"):
-            assert f"'{col}'" in html, f"Sort column {col} not in export JS"
+            assert f'"{col}"' in html, f"Sort column {col} not in export JS"
 
     def test_url_state_persistence_code(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "URLSearchParams" in html
         assert "history.replaceState" in html
 
     def test_score_1k_column(self, multi_variant_dir):
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(multi_variant_dir)
         assert "Score/1k" in html
         assert "score_per_1k_tokens" in html
 
@@ -397,17 +391,13 @@ class TestExportSortableTable:
 class TestEdgeCases:
     def test_single_variant_no_pareto_line(self, single_variant_dir):
         """Pareto front line should not render with only one variant."""
-        out = build_single_campaign(single_variant_dir)
-        html = (out / "index.html").read_text()
-        # With one variant, pareto array has 1 element, so pareto.length > 1 is false
+        html, _ = _export_campaign_html(single_variant_dir)
         assert "Plotly.newPlot('chart-efficiency'" in html
 
     def test_zero_pass_rate(self, zero_pass_dir):
         """Zero pass rate should render without errors."""
-        out = build_single_campaign(zero_pass_dir)
-        html = (out / "index.html").read_text()
+        html, _ = _export_campaign_html(zero_pass_dir)
         assert "chart-pass-rate" in html
-        # Failure rate KPI should be computed
         assert "kpi-failure" in html
 
     def test_single_variant_server(self, single_variant_dir):
@@ -424,25 +414,17 @@ class TestEdgeCases:
 
 
 class TestExportXSSPreservation:
-    def test_all_cell_values_still_escaped(self, multi_variant_dir):
-        """Ensure M2 changes preserve XSS protections."""
-        out = build_single_campaign(multi_variant_dir)
-        html = (out / "index.html").read_text()
-        assert "esc(stat(" in html
-        assert "esc(v.variant_label)" in html
-        assert "esc(i + 1)" in html
-
     def test_script_escape_still_works(self, tmp_path):
-        """Ensure </script> is still escaped in JSON blocks."""
+        """Ensure </script> is still escaped in inlined JSON blocks."""
         d = tmp_path / "xss-m2"
         d.mkdir()
         evil_label = "</script><script>alert(1)</script>"
         variants = [_make_variant(evil_label, n_trials=1)]
         trials = [_make_trial_entry("hello", evil_label)]
         (d / "summary.json").write_text(json.dumps(_make_summary(variants, trials)))
-        out = build_single_campaign(d)
-        html = (out / "index.html").read_text()
-        data_start = html.index('id="data-variants"')
+        html, _ = _export_campaign_html(d)
+        # The variants JSON block should escape </script> as <\/script>
+        data_start = html.index('id="variants-data"')
         data_end = html.index("</script>", data_start)
         data_block = html[data_start:data_end]
         assert "</script>" not in data_block

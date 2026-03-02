@@ -5,9 +5,7 @@ import json
 import pytest
 
 from calibra.web.export import (
-    SCHEMA_VERSION,
-    _build_campaign_bundle,
-    _build_task_aggregates,
+    _load_summary,
     build_single_campaign,
     build_static_site,
 )
@@ -45,11 +43,12 @@ def _make_variant(label, n_trials=2, pass_rate=1.0):
     }
 
 
-def _make_trial_entry(task, variant, verified=True):
+def _make_trial_entry(task, variant, verified=True, repeat=0):
     return {
         "task": task,
         "variant_label": variant,
-        "outcome": "success",
+        "repeat": repeat,
+        "outcome": "success" if verified else "failure",
         "verified": verified,
         "turns": 3,
         "tool_calls_total": 2,
@@ -70,9 +69,30 @@ def _make_summary(variants, trials):
     return {"variants": variants, "trials": trials}
 
 
+def _make_trial_json(task, variant, repeat=0, verified=True):
+    """Create a full trial JSON file content (as stored on disk)."""
+    return {
+        "calibra": {
+            "task": task,
+            "variant": variant,
+            "repeat": repeat,
+            "wall_time_s": 1.1,
+            "verified": verified,
+        },
+        "settings": {"model": "test-model"},
+        "stats": {"turns": 3, "total_llm_time_s": 1.0, "total_tool_time_s": 0.1},
+        "result": {"outcome": "success" if verified else "failure"},
+        "timeline": [
+            {"type": "llm_call", "duration_s": 0.5, "prompt_tokens_est": 250},
+            {"type": "tool_call", "name": "bash", "succeeded": True, "duration_s": 0.1},
+            {"type": "llm_call", "duration_s": 0.5, "prompt_tokens_est": 250},
+        ],
+    }
+
+
 @pytest.fixture
 def campaign_dir(tmp_path):
-    """Create a campaign directory with summary.json."""
+    """Create a campaign directory with summary.json and trial files."""
     d = tmp_path / "test-campaign"
     d.mkdir()
     variants = [
@@ -80,13 +100,23 @@ def campaign_dir(tmp_path):
         _make_variant("v2_fast", n_trials=2, pass_rate=0.5),
     ]
     trials = [
-        _make_trial_entry("hello", "v1_default"),
-        _make_trial_entry("world", "v1_default"),
-        _make_trial_entry("hello", "v2_fast"),
-        _make_trial_entry("world", "v2_fast", verified=False),
+        _make_trial_entry("hello", "v1_default", repeat=0),
+        _make_trial_entry("world", "v1_default", repeat=0),
+        _make_trial_entry("hello", "v2_fast", repeat=0),
+        _make_trial_entry("world", "v2_fast", verified=False, repeat=0),
     ]
     summary = _make_summary(variants, trials)
     (d / "summary.json").write_text(json.dumps(summary, indent=2))
+
+    # Create actual trial JSON files for trial inspector pages
+    for task in ("hello", "world"):
+        task_dir = d / task
+        task_dir.mkdir()
+        for vlabel in ("v1_default", "v2_fast"):
+            verified = not (task == "world" and vlabel == "v2_fast")
+            trial_data = _make_trial_json(task, vlabel, repeat=0, verified=verified)
+            (task_dir / f"{vlabel}_0.json").write_text(json.dumps(trial_data, indent=2))
+
     return d
 
 
@@ -95,125 +125,98 @@ def results_dir(campaign_dir):
     return campaign_dir.parent
 
 
-class TestBuildCampaignBundle:
-    def test_basic_bundle(self, campaign_dir):
-        bundle = _build_campaign_bundle(campaign_dir)
-        assert "campaign" in bundle
-        assert "variants" in bundle
-        assert "tasks" in bundle
-        assert "trials" in bundle
-        assert "meta" in bundle
-
-    def test_campaign_data(self, campaign_dir):
-        bundle = _build_campaign_bundle(campaign_dir)
-        c = bundle["campaign"]
-        assert c["name"] == "test-campaign"
-        assert c["n_variants"] == 2
-        assert c["n_tasks"] == 2
-        assert c["n_trials"] == 4
-
-    def test_meta_has_schema_version(self, campaign_dir):
-        bundle = _build_campaign_bundle(campaign_dir)
-        meta = bundle["meta"]
-        assert meta["schema_version"] == SCHEMA_VERSION
-        assert "generated_at" in meta
-        assert meta["generator"] == "calibra"
-
-    def test_variants_preserved(self, campaign_dir):
-        bundle = _build_campaign_bundle(campaign_dir)
-        assert len(bundle["variants"]) == 2
-
-    def test_trials_preserved(self, campaign_dir):
-        bundle = _build_campaign_bundle(campaign_dir)
-        assert len(bundle["trials"]) == 4
+class TestLoadSummary:
+    def test_valid_summary(self, campaign_dir):
+        summary = _load_summary(campaign_dir)
+        assert "variants" in summary
+        assert "trials" in summary
 
     def test_no_summary_raises(self, tmp_path):
         d = tmp_path / "no-summary"
         d.mkdir()
         with pytest.raises(FileNotFoundError, match="summary.json"):
-            _build_campaign_bundle(d)
+            _load_summary(d)
 
     def test_corrupt_summary_raises(self, tmp_path):
         d = tmp_path / "bad"
         d.mkdir()
         (d / "summary.json").write_text("not json{{{")
         with pytest.raises(ValueError, match="Corrupt summary.json"):
-            _build_campaign_bundle(d)
+            _load_summary(d)
 
     def test_invalid_structure_raises(self, tmp_path):
         d = tmp_path / "wrong-shape"
         d.mkdir()
         (d / "summary.json").write_text(json.dumps({"data": "wrong"}))
         with pytest.raises(ValueError, match="Invalid summary.json structure"):
-            _build_campaign_bundle(d)
-
-
-class TestTaskAggregates:
-    def test_groups_by_task_and_variant(self):
-        trials = [
-            _make_trial_entry("hello", "v1"),
-            _make_trial_entry("hello", "v1"),
-            _make_trial_entry("hello", "v2"),
-            _make_trial_entry("world", "v1"),
-        ]
-        result = _build_task_aggregates(trials)
-        assert len(result) == 3  # (hello,v1), (hello,v2), (world,v1)
-
-    def test_pass_rate_calculation(self):
-        trials = [
-            _make_trial_entry("hello", "v1", verified=True),
-            _make_trial_entry("hello", "v1", verified=False),
-        ]
-        result = _build_task_aggregates(trials)
-        cell = result[0]
-        assert cell["n"] == 2
-        assert cell["passes"] == 1
-        assert cell["pass_rate"] == 0.5
-
-    def test_sorted_output(self):
-        trials = [
-            _make_trial_entry("world", "v2"),
-            _make_trial_entry("hello", "v1"),
-        ]
-        result = _build_task_aggregates(trials)
-        keys = [(r["task"], r["variant"]) for r in result]
-        assert keys == sorted(keys)
+            _load_summary(d)
 
 
 class TestBuildStaticSite:
-    def test_produces_index_html(self, results_dir):
-        build_static_site(results_dir)
-        out = results_dir / "test-campaign" / "web" / "index.html"
-        assert out.is_file()
-        content = out.read_text()
-        assert "test-campaign" in content
-
-    def test_copies_assets(self, results_dir):
-        build_static_site(results_dir)
-        assets = results_dir / "test-campaign" / "web" / "assets"
-        assert assets.is_dir()
-        assert (assets / "htmx-2.0.8.min.js").is_file()
-
-    def test_inlined_json_blocks(self, results_dir):
-        build_static_site(results_dir)
-        html = (results_dir / "test-campaign" / "web" / "index.html").read_text()
-        for data_id in ("data-campaign", "data-variants", "data-tasks", "data-trials", "data-meta"):
-            assert f'id="{data_id}"' in html
-
-    def test_schema_version_in_output(self, results_dir):
-        build_static_site(results_dir)
-        html = (results_dir / "test-campaign" / "web" / "index.html").read_text()
-        # Extract the meta JSON block
-        start = html.index('id="data-meta"')
-        json_start = html.index("{", start)
-        json_end = html.index("</script>", json_start)
-        meta = json.loads(html[json_start:json_end])
-        assert meta["schema_version"] == SCHEMA_VERSION
-
-    def test_custom_output_dir(self, results_dir, tmp_path):
-        out = tmp_path / "custom-output"
+    def test_produces_all_pages(self, results_dir):
+        out = results_dir / "web"
         build_static_site(results_dir, output_dir=out)
-        assert (out / "test-campaign" / "web" / "index.html").is_file()
+
+        assert (out / "index.html").is_file()
+        assert (out / "campaign" / "test-campaign" / "index.html").is_file()
+        assert (out / "campaign" / "test-campaign" / "tasks" / "index.html").is_file()
+        assert (
+            out / "campaign" / "test-campaign" / "variant" / "v1_default" / "index.html"
+        ).is_file()
+        assert (out / "campaign" / "test-campaign" / "variant" / "v2_fast" / "index.html").is_file()
+
+    def test_copies_static_assets(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        assert (out / "static" / "vendor" / "htmx-2.0.8.min.js").is_file()
+        assert (out / "static" / "style.css").is_file()
+
+    def test_campaigns_page_lists_campaign(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "index.html").read_text()
+        assert "test-campaign" in html
+
+    def test_campaign_detail_has_variants(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "index.html").read_text()
+        assert "v1_default" in html
+        assert "v2_fast" in html
+
+    def test_task_matrix_has_cells(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "tasks" / "index.html").read_text()
+        assert "hello" in html
+        assert "world" in html
+
+    def test_variant_page_has_task_stats(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (
+            out / "campaign" / "test-campaign" / "variant" / "v1_default" / "index.html"
+        ).read_text()
+        assert "hello" in html
+        assert "world" in html
+
+    def test_trial_pages_generated(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        trial_page = (
+            out
+            / "campaign"
+            / "test-campaign"
+            / "trial"
+            / "hello"
+            / "v1_default"
+            / "0"
+            / "index.html"
+        )
+        assert trial_page.is_file()
+        html = trial_page.read_text()
+        assert "Timeline" in html
+        assert "LLM Call" in html
 
     def test_no_campaigns_raises(self, tmp_path):
         empty = tmp_path / "empty"
@@ -227,10 +230,12 @@ class TestBuildStaticSite:
 
 
 class TestBuildSingleCampaign:
-    def test_builds_single(self, campaign_dir):
+    def test_builds_all_pages(self, campaign_dir):
         out = build_single_campaign(campaign_dir)
         assert (out / "index.html").is_file()
-        assert (out / "assets").is_dir()
+        assert (out / "campaign" / "test-campaign" / "index.html").is_file()
+        assert (out / "campaign" / "test-campaign" / "tasks" / "index.html").is_file()
+        assert (out / "static" / "vendor").is_dir()
 
     def test_custom_output(self, campaign_dir, tmp_path):
         out = tmp_path / "my-export"
@@ -238,145 +243,85 @@ class TestBuildSingleCampaign:
         assert result == out
         assert (out / "index.html").is_file()
 
-
-class TestDeterminism:
-    def test_full_html_deterministic(self, campaign_dir):
-        """Verify the entire index.html is byte-identical across builds."""
-        out1 = campaign_dir / "web1"
-        out2 = campaign_dir / "web2"
-
-        build_single_campaign(campaign_dir, output_dir=out1)
-        build_single_campaign(campaign_dir, output_dir=out2)
-
-        html1 = (out1 / "index.html").read_text()
-        html2 = (out2 / "index.html").read_text()
-        assert html1 == html2
-
-    def test_meta_uses_summary_mtime(self, campaign_dir):
-        """generated_at should derive from summary.json mtime, not wall clock."""
-        out = campaign_dir / "web-check"
-        build_single_campaign(campaign_dir, output_dir=out)
-        html = (out / "index.html").read_text()
-        meta = _extract_json_block(html, "data-meta")
-        assert meta["schema_version"] == SCHEMA_VERSION
-        assert "generated_at" in meta
-        # Should be a fixed timestamp, not current time
-        from datetime import datetime, timezone
-
-        summary_mtime = datetime.fromtimestamp(
-            (campaign_dir / "summary.json").stat().st_mtime, tz=timezone.utc
-        ).isoformat()
-        assert meta["generated_at"] == summary_mtime
-
-
-class TestScriptInjectionPrevention:
-    def test_script_tag_in_variant_label(self, tmp_path):
-        """Variant label containing </script> must not break out of JSON block."""
-        d = tmp_path / "xss-campaign"
-        d.mkdir()
-        evil_label = '</script><script>alert("xss")</script>'
-        variants = [_make_variant(evil_label, n_trials=1)]
-        trials = [_make_trial_entry("hello", evil_label)]
-        (d / "summary.json").write_text(json.dumps(_make_summary(variants, trials)))
-
-        out = d / "web"
-        build_single_campaign(d, output_dir=out)
-        html = (out / "index.html").read_text()
-
-        # The literal </script> must NOT appear inside any data block
-        # Instead it should be escaped as <\/script>
-        data_start = html.index('id="data-variants"')
-        data_end = html.index("</script>", data_start)
-        data_block = html[data_start:data_end]
-        assert "</script>" not in data_block
-        assert "<\\/script>" in data_block
-
-    def test_html_in_variant_label_escaped_in_js(self, tmp_path):
-        """HTML in variant labels must be escaped when rendered in JS."""
-        d = tmp_path / "html-campaign"
-        d.mkdir()
-        html_label = "<img src=x onerror=alert(1)>"
-        variants = [_make_variant(html_label, n_trials=1)]
-        trials = [_make_trial_entry("hello", html_label)]
-        (d / "summary.json").write_text(json.dumps(_make_summary(variants, trials)))
-
-        out = d / "web"
-        build_single_campaign(d, output_dir=out)
-        html = (out / "index.html").read_text()
-
-        # The JS code should use esc() to escape the label, not raw insertion
-        assert "esc(v.variant_label)" in html
-
-    def test_all_cell_values_escaped(self, tmp_path):
-        """All dynamic cell values must go through esc(), not just labels."""
-        d = tmp_path / "numeric-xss"
-        d.mkdir()
-        evil = _make_variant("v1", n_trials=1)
-        evil["turns"] = {
-            "mean": "<img src=x>",
-            "median": 0,
-            "std": 0,
-            "min": 0,
-            "max": 0,
-            "p90": 0,
-            "ci_lower": 0,
-            "ci_upper": 0,
-        }
-        trials = [_make_trial_entry("hello", "v1")]
-        (d / "summary.json").write_text(json.dumps(_make_summary([evil], trials)))
-
-        out = d / "web"
-        build_single_campaign(d, output_dir=out)
-        html = (out / "index.html").read_text()
-
-        # Every td value insertion must use esc()
-        # The JS uses stat() which calls Number(); a non-numeric string becomes NaN → 0
-        # Then esc() HTML-escapes the formatted result. Either way, raw HTML must not appear.
-        assert "esc(stat(" in html
-
-    def test_campaign_name_html_escaped(self, tmp_path):
-        """Campaign name with HTML chars must be escaped in the page title/header."""
-        d = tmp_path / "bad<img src=x>"
-        d.mkdir()
-        variants = [_make_variant("v1", n_trials=1)]
-        trials = [_make_trial_entry("hello", "v1")]
-        (d / "summary.json").write_text(json.dumps(_make_summary(variants, trials)))
-
-        out = tmp_path / "out"
-        build_single_campaign(d, output_dir=out)
-        html = (out / "index.html").read_text()
-
-        # In the <title> tag, the name must be HTML-escaped
-        import re
-
-        title_match = re.search(r"<title>(.*?)</title>", html)
-        assert title_match is not None
-        assert "<img" not in title_match.group(1)
-        assert "&lt;img" in title_match.group(1)
-
-        # In the <h1> tag, the name must be HTML-escaped
-        h1_match = re.search(r"<h1[^>]*>(.*?)</h1>", html)
-        assert h1_match is not None
-        assert "<img" not in h1_match.group(1)
-        assert "&lt;img" in h1_match.group(1)
-
-
-class TestSingleCampaignPath:
-    def test_build_static_site_with_campaign_dir(self, campaign_dir):
+    def test_campaign_dir_via_build_static_site(self, campaign_dir):
         """build_static_site should work when given a campaign dir directly."""
         out = build_static_site(campaign_dir)
         assert (out / "index.html").is_file()
-
-    def test_build_static_site_campaign_dir_custom_output(self, campaign_dir, tmp_path):
-        out = tmp_path / "exported"
-        build_static_site(campaign_dir, output_dir=out)
-        assert (out / "index.html").is_file()
+        assert (out / "campaign" / "test-campaign" / "index.html").is_file()
 
 
-def _extract_json_block(html: str, data_id: str) -> dict:
-    """Extract a JSON data block from the HTML."""
-    marker = f'id="{data_id}"'
-    start = html.index(marker)
-    json_start = html.index("\n", start) + 1
-    json_end = html.index("\n</script>", json_start)
-    return json.loads(html[json_start:json_end])
+class TestNavigation:
+    """Verify that navigation links use correct relative root paths."""
+
+    def test_campaigns_page_links_to_campaign(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "index.html").read_text()
+        assert 'href="./campaign/test-campaign"' in html
+
+    def test_campaign_page_links_to_root(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "index.html").read_text()
+        assert 'href="../../"' in html
+
+    def test_campaign_page_links_to_tasks(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "index.html").read_text()
+        assert "../../campaign/test-campaign/tasks" in html
+
+    def test_campaign_page_links_to_variants(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "index.html").read_text()
+        assert "../../campaign/test-campaign/variant/v1_default" in html
+
+    def test_static_assets_relative(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (out / "campaign" / "test-campaign" / "index.html").read_text()
+        assert "../../static/vendor/" in html
+
+    def test_variant_page_breadcrumbs(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        html = (
+            out / "campaign" / "test-campaign" / "variant" / "v1_default" / "index.html"
+        ).read_text()
+        assert "../../../../" in html  # root link
+        assert "../../../../campaign/test-campaign" in html  # campaign link
+
+    def test_trial_page_links(self, results_dir):
+        out = results_dir / "web"
+        build_static_site(results_dir, output_dir=out)
+        trial_page = (
+            out
+            / "campaign"
+            / "test-campaign"
+            / "trial"
+            / "hello"
+            / "v1_default"
+            / "0"
+            / "index.html"
+        )
+        html = trial_page.read_text()
+        assert "../../../../../../" in html  # root link
+
+
+class TestMultipleCampaigns:
+    def test_index_lists_all_campaigns(self, tmp_path):
+        for name in ("campaign-a", "campaign-b"):
+            d = tmp_path / name
+            d.mkdir()
+            variants = [_make_variant("v1", n_trials=1)]
+            trials = [_make_trial_entry("task1", "v1")]
+            (d / "summary.json").write_text(json.dumps(_make_summary(variants, trials), indent=2))
+
+        out = tmp_path / "web"
+        build_static_site(tmp_path, output_dir=out)
+        html = (out / "index.html").read_text()
+        assert "campaign-a" in html
+        assert "campaign-b" in html
+        assert (out / "campaign" / "campaign-a" / "index.html").is_file()
+        assert (out / "campaign" / "campaign-b" / "index.html").is_file()

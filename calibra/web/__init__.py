@@ -50,6 +50,7 @@ def create_app(results_dir: Path) -> FastAPI:
     app.state.results_dir = results_dir
     app.state.templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
     app.state.templates.env.filters["num"] = safe_num
+    app.state.templates.env.globals["root_path"] = ""
 
     cache = ResultCache(results_dir=results_dir.resolve())
     cache.scan()

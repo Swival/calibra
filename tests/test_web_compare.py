@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from calibra.web import create_app
-from calibra.web.export import SCHEMA_VERSION, build_static_site
+from calibra.web.export import build_static_site
 
 
 def _stat_block(mean, std=0):
@@ -277,33 +277,27 @@ class TestCompareNavigation:
 
 class TestStaticExportVerification:
     def test_build_produces_index_html(self, compare_dir):
-        build_static_site(compare_dir)
-        # Should find at least one index.html
-        found = list(compare_dir.rglob("web/index.html"))
-        assert len(found) > 0
+        out = compare_dir / "web"
+        build_static_site(compare_dir, output_dir=out)
+        assert (out / "index.html").is_file()
 
-    def test_html_contains_data_blocks(self, compare_dir):
-        build_static_site(compare_dir)
-        html_files = list(compare_dir.rglob("web/index.html"))
-        html = html_files[0].read_text()
-        for data_id in ("data-campaign", "data-variants", "data-trials", "data-meta"):
-            assert f'id="{data_id}"' in html
+    def test_campaign_pages_generated(self, compare_dir):
+        out = compare_dir / "web"
+        build_static_site(compare_dir, output_dir=out)
+        # Both campaigns should have detail pages
+        for name in ("camp-a", "camp-b"):
+            assert (out / "campaign" / name / "index.html").is_file()
 
-    def test_schema_version_in_meta(self, compare_dir):
-        build_static_site(compare_dir)
-        html_files = list(compare_dir.rglob("web/index.html"))
-        html = html_files[0].read_text()
-        start = html.index('id="data-meta"')
-        json_start = html.index("{", start)
-        json_end = html.index("</script>", json_start)
-        meta = json.loads(html[json_start:json_end])
-        assert meta["schema_version"] == SCHEMA_VERSION
+    def test_variant_pages_generated(self, compare_dir):
+        out = compare_dir / "web"
+        build_static_site(compare_dir, output_dir=out)
+        html = (out / "campaign" / "camp-a" / "index.html").read_text()
+        assert "v1" in html
 
-    def test_assets_directory_created(self, compare_dir):
-        build_static_site(compare_dir)
-        assets_dirs = list(compare_dir.rglob("web/assets"))
-        assert len(assets_dirs) > 0
-        assert assets_dirs[0].is_dir()
+    def test_static_directory_created(self, compare_dir):
+        out = compare_dir / "web"
+        build_static_site(compare_dir, output_dir=out)
+        assert (out / "static" / "vendor").is_dir()
 
 
 class TestCompareMalformedData:

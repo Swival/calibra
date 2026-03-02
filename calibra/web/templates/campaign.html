@@ -3,11 +3,11 @@
 {% block title %}Calibra: {{ campaign.name }}{% endblock %}
 
 {% block head %}
-<script src="/static/vendor/plotly-3.4.0.min.js"></script>
+<script src="{{ root_path }}/static/vendor/plotly-3.4.0.min.js"></script>
 {% endblock %}
 
 {% block nav_right %}
-<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+<a href="{{ root_path }}/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
 {% endblock %}
 
 {% block content %}
@@ -15,7 +15,7 @@
   <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ campaign.name }}</h1>
   <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ campaign.n_variants }} variants, {{ campaign.n_tasks }} tasks, {{ campaign.n_trials }} trials
     <span class="mx-1">&middot;</span>
-    <a href="/campaign/{{ campaign.name }}/tasks" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" data-nav="task-matrix">Task Matrix</a>
+    <a href="{{ root_path }}/campaign/{{ campaign.name }}/tasks" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" data-nav="task-matrix">Task Matrix</a>
   </p>
 </div>
 
@@ -111,7 +111,7 @@
           data-wall-time="{{ wall_m }}"
           data-score-1k="{{ score }}">
         <td class="px-4 py-2 font-mono tabular-nums text-slate-500 dark:text-slate-400 rank-cell">{{ loop.index }}</td>
-        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white"><a href="/campaign/{{ campaign.name }}/variant/{{ v.variant_label }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline" data-nav="variant-link">{{ v.variant_label }}</a></td>
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white"><a href="{{ root_path }}/campaign/{{ campaign.name }}/variant/{{ v.variant_label }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline" data-nav="variant-link">{{ v.variant_label }}</a></td>
         <td class="px-4 py-2 text-right font-mono tabular-nums
           {% if pr >= 0.8 %}text-teal-600 dark:text-teal-400
           {% elif pr >= 0.5 %}text-amber-600 dark:text-amber-400

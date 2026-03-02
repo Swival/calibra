@@ -3,21 +3,21 @@
 {% block title %}Calibra: {{ campaign_name }}, Task Matrix{% endblock %}
 
 {% block head %}
-<script src="/static/vendor/plotly-3.4.0.min.js"></script>
+<script src="{{ root_path }}/static/vendor/plotly-3.4.0.min.js"></script>
 {% endblock %}
 
 {% block nav_right %}
-<a href="/campaign/{{ campaign_name }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ campaign_name }}</a>
+<a href="{{ root_path }}/campaign/{{ campaign_name }}" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">{{ campaign_name }}</a>
 <span class="text-slate-300 dark:text-slate-600">/</span>
-<a href="/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+<a href="{{ root_path }}/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
 {% endblock %}
 
 {% block content %}
 <div class="mb-6">
   <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2" data-test="breadcrumb">
-    <a href="/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <a href="{{ root_path }}/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
     <span class="mx-1">&rsaquo;</span>
-    <a href="/campaign/{{ campaign_name }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ campaign_name }}</a>
+    <a href="{{ root_path }}/campaign/{{ campaign_name }}" class="hover:text-slate-700 dark:hover:text-slate-200">{{ campaign_name }}</a>
     <span class="mx-1">&rsaquo;</span>
     <span class="text-slate-700 dark:text-slate-200">Task Matrix</span>
   </nav>
@@ -100,7 +100,7 @@
       var variant = pt.x;
       var task = pt.y;
       if (variant) {
-        window.location.href = '/campaign/' + encodeURIComponent(campaignName) +
+        window.location.href = CALIBRA_ROOT + '/campaign/' + encodeURIComponent(campaignName) +
           '/variant/' + encodeURIComponent(variant) + '?task=' + encodeURIComponent(task);
       }
     }
