@@ -135,18 +135,16 @@ name = "calibra"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "fastapi" },
+    { name = "jinja2" },
     { name = "rich" },
     { name = "swival" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.optional-dependencies]
 charts = [
     { name = "matplotlib" },
-]
-web = [
-    { name = "fastapi" },
-    { name = "jinja2" },
-    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.dev-dependencies]
@@ -161,14 +159,14 @@ website = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.135.1" },
-    { name = "jinja2", marker = "extra == 'web'", specifier = ">=3.1.6" },
+    { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'charts'" },
     { name = "rich" },
     { name = "swival", specifier = ">=0.1.14" },
-    { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.41.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
-provides-extras = ["charts", "web"]
+provides-extras = ["charts"]
 
 [package.metadata.requires-dev]
 dev = [

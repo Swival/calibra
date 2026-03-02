@@ -9,15 +9,13 @@ requires-python = ">=3.13"
 dependencies = [
     "swival>=0.1.14",
     "rich",
-]
-
-[project.optional-dependencies]
-charts = ["matplotlib"]
-web = [
     "fastapi>=0.135.1",
     "uvicorn[standard]>=0.41.0",
     "jinja2>=3.1.6",
 ]
+
+[project.optional-dependencies]
+charts = ["matplotlib"]
 
 [project.scripts]
 calibra = "calibra.cli:main"
