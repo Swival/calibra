@@ -15,29 +15,13 @@ from calibra.utils import json_for_html, safe_num
 from calibra.web.api import router as api_router
 from calibra.web.cache import ResultCache
 from calibra.web.security import validate_path, validate_segment
-
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-STATIC_DIR = Path(__file__).parent / "static"
-
-
-def _stat_mean(obj: object) -> float:
-    """Extract ``mean`` from a stat dict, returning 0 on failure."""
-    if isinstance(obj, dict):
-        return safe_num(obj.get("mean", 0))
-    return 0.0
-
-
-def _rank_variants(variants: list[dict]) -> list[dict]:
-    """Sort variants by pass_rate desc, tokens asc, turns asc."""
-
-    def _key(v: dict) -> tuple:
-        return (
-            -safe_num(v.get("pass_rate", 0)),
-            _stat_mean(v.get("prompt_tokens_est")),
-            _stat_mean(v.get("turns")),
-        )
-
-    return sorted(variants, key=_key)
+from calibra.web.viewdata import (
+    STATIC_DIR,
+    TEMPLATES_DIR,
+    build_task_cells,
+    build_variant_stats,
+    rank_variants,
+)
 
 
 def create_app(results_dir: Path) -> FastAPI:
@@ -86,7 +70,7 @@ def create_app(results_dir: Path) -> FastAPI:
         summary = idx.summary
         variants_json = ""
         if summary and "variants" in summary:
-            ranked = _rank_variants(summary["variants"])
+            ranked = rank_variants(summary["variants"])
             summary = {**summary, "variants": ranked}
             variants_json = json_for_html(ranked)
         return app.state.templates.TemplateResponse(
@@ -107,37 +91,8 @@ def create_app(results_dir: Path) -> FastAPI:
 
         trials = summary.get("trials", [])
         variants_list = summary.get("variants", [])
-        variant_labels = [v["variant_label"] for v in variants_list]
+        cells_list, tasks_list, variant_labels = build_task_cells(trials, variants_list)
 
-        cells: dict[tuple[str, str], dict] = {}
-        task_names: set[str] = set()
-        for t in trials:
-            task_name = t["task"]
-            task_names.add(task_name)
-            key = (task_name, t["variant_label"])
-            if key not in cells:
-                cells[key] = {
-                    "task": task_name,
-                    "variant": t["variant_label"],
-                    "n": 0,
-                    "passes": 0,
-                    "turns_sum": 0.0,
-                    "tokens_sum": 0.0,
-                }
-            cells[key]["n"] += 1
-            if t.get("verified") is True:
-                cells[key]["passes"] += 1
-            cells[key]["turns_sum"] += safe_num(t.get("turns", 0))
-            cells[key]["tokens_sum"] += safe_num(t.get("prompt_tokens_est", 0))
-
-        for cell in cells.values():
-            n = cell["n"]
-            cell["pass_rate"] = round(cell["passes"] / n, 4) if n > 0 else 0.0
-            cell["mean_turns"] = round(cell["turns_sum"] / n, 1) if n > 0 else 0.0
-            cell["mean_tokens"] = round(cell["tokens_sum"] / n, 0) if n > 0 else 0.0
-
-        cells_json = json_for_html(list(cells.values()))
-        tasks_list = sorted(task_names)
         return app.state.templates.TemplateResponse(
             request,
             "tasks.html",
@@ -145,7 +100,7 @@ def create_app(results_dir: Path) -> FastAPI:
                 "campaign_name": name,
                 "tasks_list": tasks_list,
                 "variant_labels": variant_labels,
-                "cells_json": cells_json,
+                "cells_json": json_for_html(cells_list),
             },
         )
 
@@ -169,57 +124,7 @@ def create_app(results_dir: Path) -> FastAPI:
             raise HTTPException(status_code=404, detail="Variant not found")
 
         trials = [t for t in summary.get("trials", []) if t["variant_label"] == label]
-
-        per_task: dict[str, dict] = {}
-        failure_counts: dict[str, int] = {}
-        tool_agg: dict[str, dict[str, int]] = {}
-        for t in trials:
-            tk = t["task"]
-            if tk not in per_task:
-                per_task[tk] = {
-                    "task": tk,
-                    "n": 0,
-                    "passes": 0,
-                    "outcomes": [],
-                    "turns_vals": [],
-                    "tokens_vals": [],
-                    "wall_time_vals": [],
-                }
-            pt = per_task[tk]
-            pt["n"] += 1
-            if t.get("verified") is True:
-                pt["passes"] += 1
-            pt["outcomes"].append(t.get("outcome", "unknown"))
-            pt["turns_vals"].append(safe_num(t.get("turns", 0)))
-            pt["tokens_vals"].append(safe_num(t.get("prompt_tokens_est", 0)))
-            pt["wall_time_vals"].append(safe_num(t.get("wall_time_s", 0)))
-
-            fc = t.get("failure_class")
-            if fc:
-                failure_counts[fc] = failure_counts.get(fc, 0) + 1
-            for tool_name, counts in t.get("tool_calls_by_name", {}).items():
-                if tool_name not in tool_agg:
-                    tool_agg[tool_name] = {"succeeded": 0, "failed": 0}
-                if isinstance(counts, dict):
-                    tool_agg[tool_name]["succeeded"] += counts.get("succeeded", 0)
-                    tool_agg[tool_name]["failed"] += counts.get("failed", 0)
-
-        task_stats = []
-        for tk, pt in sorted(per_task.items()):
-            n = pt["n"]
-            task_stats.append(
-                {
-                    "task": tk,
-                    "n": n,
-                    "passes": pt["passes"],
-                    "pass_rate": round(pt["passes"] / n, 4) if n > 0 else 0.0,
-                    "outcomes": pt["outcomes"],
-                    "mean_turns": round(sum(pt["turns_vals"]) / n, 1) if n > 0 else 0.0,
-                    "mean_tokens": round(sum(pt["tokens_vals"]) / n, 0) if n > 0 else 0.0,
-                    "mean_wall_time": (round(sum(pt["wall_time_vals"]) / n, 1) if n > 0 else 0.0),
-                    "turns_vals": pt["turns_vals"],
-                }
-            )
+        task_stats, failure_counts, tool_agg = build_variant_stats(trials)
 
         dimensions = label.split("_")
 

@@ -4,40 +4,23 @@ from __future__ import annotations
 
 import json
 import shutil
+from collections import defaultdict
 from pathlib import Path
 from types import SimpleNamespace
 
 from jinja2 import Environment, FileSystemLoader
 
-from calibra.utils import json_for_html, safe_num, weighted_pass_rate
+from calibra.utils import json_for_html, safe_num
+from calibra.web.viewdata import (
+    STATIC_DIR,
+    TEMPLATES_DIR,
+    build_task_cells,
+    build_variant_stats,
+    campaign_stats,
+    rank_variants,
+)
 
 SCHEMA_VERSION = 1
-TEMPLATES_DIR = Path(__file__).parent / "templates"
-STATIC_DIR = Path(__file__).parent / "static"
-
-
-def _root_path(depth: int) -> str:
-    """Relative path from a page at *depth* directories below root back to root."""
-    if depth == 0:
-        return "."
-    return "/".join([".."] * depth)
-
-
-def _stat_mean(obj: object) -> float:
-    if isinstance(obj, dict):
-        return safe_num(obj.get("mean", 0))
-    return 0.0
-
-
-def _rank_variants(variants: list[dict]) -> list[dict]:
-    def _key(v: dict) -> tuple:
-        return (
-            -safe_num(v.get("pass_rate", 0)),
-            _stat_mean(v.get("prompt_tokens_est")),
-            _stat_mean(v.get("turns")),
-        )
-
-    return sorted(variants, key=_key)
 
 
 def _load_summary(campaign_dir: Path) -> dict:
@@ -79,8 +62,18 @@ class _SiteBuilder:
         self.output_dir = output_dir
         self.env = _create_jinja_env()
 
-    def render(self, template_name: str, context: dict) -> str:
-        return self.env.get_template(template_name).render(**context)
+    def _root_path_for(self, page_path: Path) -> str:
+        """Compute relative root path from a page's location back to the output root."""
+        depth = len(page_path.relative_to(self.output_dir).parts) - 1
+        if depth <= 0:
+            return "."
+        return "/".join([".."] * depth)
+
+    def _render_page(self, page_path: Path, template_name: str, context: dict) -> None:
+        """Render a template with auto-computed root_path and write to disk."""
+        context["root_path"] = self._root_path_for(page_path)
+        html = self.env.get_template(template_name).render(**context)
+        _write_page(page_path, html)
 
     def build(self, campaign_dirs: list[Path], summaries: list[dict]) -> None:
         self._copy_static()
@@ -95,21 +88,12 @@ class _SiteBuilder:
         shutil.copytree(STATIC_DIR, dest)
 
     def _build_campaigns_page(self, campaign_dirs: list[Path], summaries: list[dict]) -> None:
-        campaigns = []
-        for d, summary in zip(campaign_dirs, summaries):
-            variants = summary.get("variants", [])
-            trials = summary.get("trials", [])
-            campaigns.append(
-                {
-                    "name": d.name,
-                    "n_variants": len(variants),
-                    "n_tasks": len({t["task"] for t in trials}),
-                    "n_trials": len(trials),
-                    "pass_rate": weighted_pass_rate(variants),
-                }
-            )
-        html = self.render("campaigns.html", {"campaigns": campaigns, "root_path": "."})
-        _write_page(self.output_dir / "index.html", html)
+        campaigns = [campaign_stats(d.name, s) for d, s in zip(campaign_dirs, summaries)]
+        self._render_page(
+            self.output_dir / "index.html",
+            "campaigns.html",
+            {"campaigns": campaigns},
+        )
 
     def _build_campaign_pages(self, campaign_dir: Path, summary: dict) -> None:
         name = campaign_dir.name
@@ -117,133 +101,56 @@ class _SiteBuilder:
         variants = summary.get("variants", [])
         trials = summary.get("trials", [])
 
-        ranked = _rank_variants(variants)
+        ranked = rank_variants(variants)
         ranked_summary = {**summary, "variants": ranked}
-        campaign_obj = SimpleNamespace(
-            name=name,
-            n_variants=len(variants),
-            n_tasks=len({t["task"] for t in trials}),
-            n_trials=len(trials),
-            pass_rate=weighted_pass_rate(variants),
-        )
-        html = self.render(
+        stats = campaign_stats(name, summary)
+        campaign_obj = SimpleNamespace(**stats)
+        self._render_page(
+            base / "index.html",
             "campaign.html",
             {
                 "campaign": campaign_obj,
                 "summary": ranked_summary,
                 "variants_json": json_for_html(ranked),
-                "root_path": _root_path(2),
             },
         )
-        _write_page(base / "index.html", html)
 
         self._build_task_matrix(base, name, summary)
 
+        trials_by_variant: dict[str, list[dict]] = defaultdict(list)
+        for t in trials:
+            trials_by_variant[t["variant_label"]].append(t)
+
         for v in variants:
-            self._build_variant_page(base, name, v, summary)
+            label = v["variant_label"]
+            self._build_variant_page(base, name, v, trials_by_variant.get(label, []))
 
         self._build_trial_pages(base, name, campaign_dir)
 
     def _build_task_matrix(self, base: Path, name: str, summary: dict) -> None:
         trials = summary.get("trials", [])
         variants_list = summary.get("variants", [])
-        variant_labels = [v["variant_label"] for v in variants_list]
+        cells_list, tasks_list, variant_labels = build_task_cells(trials, variants_list)
 
-        cells: dict[tuple[str, str], dict] = {}
-        task_names: set[str] = set()
-        for t in trials:
-            task_name = t["task"]
-            task_names.add(task_name)
-            key = (task_name, t["variant_label"])
-            if key not in cells:
-                cells[key] = {
-                    "task": task_name,
-                    "variant": t["variant_label"],
-                    "n": 0,
-                    "passes": 0,
-                    "turns_sum": 0.0,
-                    "tokens_sum": 0.0,
-                }
-            cells[key]["n"] += 1
-            if t.get("verified") is True:
-                cells[key]["passes"] += 1
-            cells[key]["turns_sum"] += safe_num(t.get("turns", 0))
-            cells[key]["tokens_sum"] += safe_num(t.get("prompt_tokens_est", 0))
-
-        for cell in cells.values():
-            n = cell["n"]
-            cell["pass_rate"] = round(cell["passes"] / n, 4) if n > 0 else 0.0
-            cell["mean_turns"] = round(cell["turns_sum"] / n, 1) if n > 0 else 0.0
-            cell["mean_tokens"] = round(cell["tokens_sum"] / n, 0) if n > 0 else 0.0
-
-        html = self.render(
+        self._render_page(
+            base / "tasks" / "index.html",
             "tasks.html",
             {
                 "campaign_name": name,
-                "tasks_list": sorted(task_names),
+                "tasks_list": tasks_list,
                 "variant_labels": variant_labels,
-                "cells_json": json_for_html(list(cells.values())),
-                "root_path": _root_path(3),
+                "cells_json": json_for_html(cells_list),
             },
         )
-        _write_page(base / "tasks" / "index.html", html)
 
-    def _build_variant_page(self, base: Path, name: str, variant_agg: dict, summary: dict) -> None:
+    def _build_variant_page(
+        self, base: Path, name: str, variant_agg: dict, trials: list[dict]
+    ) -> None:
         label = variant_agg["variant_label"]
-        trials = [t for t in summary.get("trials", []) if t["variant_label"] == label]
+        task_stats, failure_counts, tool_agg = build_variant_stats(trials)
 
-        per_task: dict[str, dict] = {}
-        failure_counts: dict[str, int] = {}
-        tool_agg: dict[str, dict[str, int]] = {}
-        for t in trials:
-            tk = t["task"]
-            if tk not in per_task:
-                per_task[tk] = {
-                    "task": tk,
-                    "n": 0,
-                    "passes": 0,
-                    "outcomes": [],
-                    "turns_vals": [],
-                    "tokens_vals": [],
-                    "wall_time_vals": [],
-                }
-            pt = per_task[tk]
-            pt["n"] += 1
-            if t.get("verified") is True:
-                pt["passes"] += 1
-            pt["outcomes"].append(t.get("outcome", "unknown"))
-            pt["turns_vals"].append(safe_num(t.get("turns", 0)))
-            pt["tokens_vals"].append(safe_num(t.get("prompt_tokens_est", 0)))
-            pt["wall_time_vals"].append(safe_num(t.get("wall_time_s", 0)))
-
-            fc = t.get("failure_class")
-            if fc:
-                failure_counts[fc] = failure_counts.get(fc, 0) + 1
-            for tool_name, counts in t.get("tool_calls_by_name", {}).items():
-                if tool_name not in tool_agg:
-                    tool_agg[tool_name] = {"succeeded": 0, "failed": 0}
-                if isinstance(counts, dict):
-                    tool_agg[tool_name]["succeeded"] += counts.get("succeeded", 0)
-                    tool_agg[tool_name]["failed"] += counts.get("failed", 0)
-
-        task_stats = []
-        for tk, pt in sorted(per_task.items()):
-            n = pt["n"]
-            task_stats.append(
-                {
-                    "task": tk,
-                    "n": n,
-                    "passes": pt["passes"],
-                    "pass_rate": round(pt["passes"] / n, 4) if n > 0 else 0.0,
-                    "outcomes": pt["outcomes"],
-                    "mean_turns": round(sum(pt["turns_vals"]) / n, 1) if n > 0 else 0.0,
-                    "mean_tokens": round(sum(pt["tokens_vals"]) / n, 0) if n > 0 else 0.0,
-                    "mean_wall_time": (round(sum(pt["wall_time_vals"]) / n, 1) if n > 0 else 0.0),
-                    "turns_vals": pt["turns_vals"],
-                }
-            )
-
-        html = self.render(
+        self._render_page(
+            base / "variant" / label / "index.html",
             "variant.html",
             {
                 "campaign_name": name,
@@ -258,10 +165,8 @@ class _SiteBuilder:
                 "tool_json": json_for_html(tool_agg),
                 "trials": trials,
                 "task_filter": None,
-                "root_path": _root_path(4),
             },
         )
-        _write_page(base / "variant" / label / "index.html", html)
 
     def _build_trial_pages(self, base: Path, name: str, campaign_dir: Path) -> None:
         trial_files = sorted(p for p in campaign_dir.rglob("*.json") if p.name != "summary.json")
@@ -281,7 +186,8 @@ class _SiteBuilder:
                 raw_text = ""
                 error = f"Failed to load trial data: {exc}"
 
-            html = self.render(
+            self._render_page(
+                base / "trial" / task / variant / repeat / "index.html",
                 "trial.html",
                 {
                     "campaign_name": name,
@@ -291,10 +197,8 @@ class _SiteBuilder:
                     "trial": trial_data,
                     "raw_json": raw_text,
                     "error": error,
-                    "root_path": _root_path(6),
                 },
             )
-            _write_page(base / "trial" / task / variant / repeat / "index.html", html)
 
 
 def build_static_site(results_dir: Path, output_dir: Path | None = None) -> Path:
