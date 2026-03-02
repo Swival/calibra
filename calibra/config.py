@@ -312,13 +312,11 @@ def load_campaign(path: str | Path) -> Campaign:
         )
     _check_labels_unique(models, "model")
 
-    ai_raw = matrix.get("agent_instructions", [])
-    if not ai_raw:
-        raise ConfigError("At least one [[matrix.agent_instructions]] is required")
+    ai_raw = matrix.get("agent_instructions", [{"label": "default", "agents_md": ""}])
     agent_instructions = [
         AgentInstructionsVariant(
             label=_require(a, "label", "[[matrix.agent_instructions]]"),
-            agents_md=_resolve(base, _require(a, "agents_md", "[[matrix.agent_instructions]]")),
+            agents_md=_resolve(base, a.get("agents_md", "")),
         )
         for a in ai_raw
     ]
