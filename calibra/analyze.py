@@ -231,7 +231,7 @@ def flag_instabilities(agg: AggregateMetrics) -> list[str]:
     warnings = []
     for metric_name in ["turns", "llm_time_s", "prompt_tokens_est"]:
         stat: StatSummary = getattr(agg, metric_name)
-        if stat.mean > 0 and stat.std / stat.mean > 0.5:
+        if stat.mean > 0 and stat.std / stat.mean > 1.0:
             warnings.append(f"High CV for {metric_name}: {stat.std / stat.mean:.2f}")
     if agg.n_trials < 3:
         warnings.append("Fewer than 3 repeats, low confidence")

@@ -183,7 +183,7 @@ def test_flag_instabilities_low_repeats():
 def test_flag_instabilities_high_cv():
     agg = _make_agg("v1", n_trials=5)
     agg.turns = StatSummary(
-        mean=5.0, median=5.0, std=5.0, min=1.0, max=10.0, p90=9.0, ci_lower=3.0, ci_upper=7.0
+        mean=5.0, median=5.0, std=6.0, min=1.0, max=10.0, p90=9.0, ci_lower=3.0, ci_upper=7.0
     )
     warnings = flag_instabilities(agg)
     assert any("High CV" in w for w in warnings)

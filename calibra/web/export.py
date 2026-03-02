@@ -268,7 +268,7 @@ def _render_export_html(bundle: dict) -> str:
           var m = v[metric];
           if (m && typeof m === 'object') {{
             var mean = num(m.mean), std = num(m.std);
-            if (mean > 0 && std / mean > 0.5) {{
+            if (mean > 0 && std / mean > 1.0) {{
               warnings.push(esc(label) + ': high variability in ' + esc(metric.replace(/_/g, ' ')) + ' (CV=' + (std/mean).toFixed(2) + ')');
             }}
           }}

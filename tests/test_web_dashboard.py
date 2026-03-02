@@ -364,8 +364,8 @@ class TestExportWarnings:
         out = build_single_campaign(high_cv_dir)
         html = (out / "index.html").read_text()
         assert "warnings-panel" in html
-        # The JS will show warnings for high CV; check the code detects CV > 0.5
-        assert "std / mean > 0.5" in html
+        # The JS will show warnings for high CV; check the code detects CV > 1.0
+        assert "std / mean > 1.0" in html
 
     def test_low_repeat_trigger(self, low_repeat_dir):
         out = build_single_campaign(low_repeat_dir)
