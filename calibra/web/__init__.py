@@ -41,9 +41,13 @@ def _rank_variants(variants: list[dict]) -> list[dict]:
 
 
 def create_app(results_dir: Path) -> FastAPI:
+    results_dir = results_dir.resolve()
+    if (results_dir / "summary.json").is_file():
+        results_dir = results_dir.parent
+
     app = FastAPI(title="Calibra", docs_url=None, redoc_url=None)
 
-    app.state.results_dir = results_dir.resolve()
+    app.state.results_dir = results_dir
     app.state.templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
     app.state.templates.env.filters["num"] = safe_num
 
