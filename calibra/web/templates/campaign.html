@@ -62,15 +62,11 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Pass Rate by Variant</h3>
-    <div id="chart-pass-rate" class="chart-container">
-      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
-    </div>
+    <div id="chart-pass-rate" class="chart-container"></div>
   </div>
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Efficiency: Tokens vs Pass Rate</h3>
-    <div id="chart-efficiency" class="chart-container">
-      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
-    </div>
+    <div id="chart-efficiency" class="chart-container"></div>
   </div>
 </div>
 
@@ -225,7 +221,7 @@
     hovertemplate: '%{y}<br>Pass rate: %{x:.1f}%<extra></extra>'
   }], {
     margin: { l: 140, r: 20, t: 10, b: 40 },
-    xaxis: { title: 'Pass Rate (%)', range: [0, 105], color: textColor, gridcolor: gridColor },
+    xaxis: { title: { text: 'Pass Rate (%)' }, range: [0, 105], color: textColor, gridcolor: gridColor },
     yaxis: { color: textColor, automargin: true },
     paper_bgcolor: bgColor,
     plot_bgcolor: bgColor,
@@ -284,8 +280,8 @@
 
   Plotly.newPlot('chart-efficiency', traces, {
     margin: { l: 60, r: 20, t: 10, b: 50 },
-    xaxis: { title: 'Mean Tokens', color: textColor, gridcolor: gridColor },
-    yaxis: { title: 'Pass Rate (%)', range: [0, 105], color: textColor, gridcolor: gridColor },
+    xaxis: { title: { text: 'Mean Tokens' }, color: textColor, gridcolor: gridColor },
+    yaxis: { title: { text: 'Pass Rate (%)' }, range: [0, 105], color: textColor, gridcolor: gridColor },
     paper_bgcolor: bgColor,
     plot_bgcolor: bgColor,
     font: { family: 'ui-monospace, monospace', size: 11, color: textColor },

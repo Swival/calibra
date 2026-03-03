@@ -28,7 +28,6 @@
 {% if cells_json != "[]" %}
 <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
   <div id="heatmap" data-test="heatmap-container" class="chart-container-lg">
-    <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
   </div>
 </div>
 {% else %}
@@ -84,7 +83,7 @@
     hovertemplate: '%{text}<extra></extra>',
     colorscale: [[0, '#dc2626'], [0.5, '#d97706'], [1, '#0d9488']],
     zmin: 0, zmax: 1,
-    colorbar: { title: 'Pass Rate', tickformat: '.0%' }
+    colorbar: { title: { text: 'Pass Rate' }, tickformat: '.0%' }
   }], {
     margin: { l: 140, r: 20, t: 10, b: 80 },
     xaxis: { color: textColor, tickangle: -45 },

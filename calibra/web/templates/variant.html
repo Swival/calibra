@@ -90,24 +90,18 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Turns Distribution by Task</h3>
-    <div id="chart-turns-box" data-test="chart-turns" class="chart-container">
-      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
-    </div>
+    <div id="chart-turns-box" data-test="chart-turns" class="chart-container"></div>
   </div>
   {% if failure_counts %}
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Failure Breakdown</h3>
-    <div id="chart-failures" data-test="chart-failures" class="chart-container">
-      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
-    </div>
+    <div id="chart-failures" data-test="chart-failures" class="chart-container"></div>
   </div>
   {% endif %}
   {% if tool_agg %}
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
     <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Tool Usage</h3>
-    <div id="chart-tools" data-test="chart-tools" class="chart-container">
-      <div class="flex items-center justify-center h-full text-sm text-slate-400 dark:text-slate-500">Loading chart…</div>
-    </div>
+    <div id="chart-tools" data-test="chart-tools" class="chart-container"></div>
   </div>
   {% endif %}
 </div>
@@ -193,7 +187,7 @@
     });
     Plotly.newPlot('chart-turns-box', boxTraces, {
       margin: { l: 50, r: 20, t: 10, b: 60 },
-      yaxis: { title: 'Turns', color: textColor, gridcolor: gridColor },
+      yaxis: { title: { text: 'Turns' }, color: textColor, gridcolor: gridColor },
       xaxis: { color: textColor },
       paper_bgcolor: bgColor,
       plot_bgcolor: bgColor,
@@ -246,7 +240,7 @@
     ], {
       barmode: 'stack',
       margin: { l: 120, r: 20, t: 10, b: 40 },
-      xaxis: { title: 'Calls', color: textColor, gridcolor: gridColor },
+      xaxis: { title: { text: 'Calls' }, color: textColor, gridcolor: gridColor },
       yaxis: { color: textColor, automargin: true },
       paper_bgcolor: bgColor,
       plot_bgcolor: bgColor,

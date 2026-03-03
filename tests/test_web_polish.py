@@ -162,10 +162,6 @@ class TestResponsiveTables:
 
 
 class TestChartContainers:
-    def test_campaign_chart_has_loading_placeholder(self, client, polish_dir):
-        r = client.get(f"/campaign/{polish_dir.name}")
-        assert "Loading chart" in r.text
-
     def test_campaign_chart_uses_chart_container_class(self, client, polish_dir):
         r = client.get(f"/campaign/{polish_dir.name}")
         assert 'class="chart-container"' in r.text
