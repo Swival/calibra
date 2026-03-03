@@ -15,6 +15,7 @@ from calibra.utils import json_for_html, safe_num
 from calibra.web.api import router as api_router
 from calibra.web.cache import ResultCache
 from calibra.web.security import validate_path, validate_segment
+from calibra.web.export import load_diff_report
 from calibra.web.viewdata import (
     STATIC_DIR,
     TEMPLATES_DIR,
@@ -248,22 +249,11 @@ def create_app(results_dir: Path) -> FastAPI:
                 if not val:
                     errors.append(f"File {label}: no path provided")
                     continue
-                p = Path(val).resolve(strict=False)
-                if not p.exists():
-                    errors.append(f"File {label} not found: {val}")
-                elif p.suffix.lower() != ".json":
-                    errors.append(f"File {label} is not a .json file: {val}")
-                else:
-                    try:
-                        text = p.read_text()
-                        parsed = json.loads(text)
-                        if not isinstance(parsed, dict):
-                            errors.append(f"File {label} is not a JSON object: {val}")
-                        else:
-                            reports[idx] = parsed
-                            raws[idx] = text
-                    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-                        errors.append(f"File {label}: {exc}")
+                try:
+                    p = Path(val).resolve(strict=False)
+                    reports[idx], raws[idx] = load_diff_report(p, label)
+                except ValueError as exc:
+                    errors.append(str(exc))
 
             if errors:
                 error = "; ".join(errors)

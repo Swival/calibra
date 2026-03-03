@@ -114,17 +114,10 @@ def cmd_diff(args):
         paths.append(p)
 
     if args.export:
-        output = Path(args.export).resolve()
-        if output.is_dir():
-            print(f"Error: --export path is a directory: {output}", file=sys.stderr)
-            sys.exit(1)
-        if not output.parent.is_dir():
-            print(f"Error: parent directory does not exist: {output.parent}", file=sys.stderr)
-            sys.exit(1)
         from calibra.web.export import export_diff
 
-        export_diff(paths[0], paths[1], output)
-        print(f"Exported diff to {output}")
+        export_diff(paths[0], paths[1], Path(args.export).resolve())
+        print(f"Exported diff to {Path(args.export).resolve()}")
         return
 
     import tempfile

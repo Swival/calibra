@@ -199,8 +199,7 @@ def _safe_dict(val: object) -> dict:
     return val if isinstance(val, dict) else {}
 
 
-def _tool_counts(stats: dict, name: str) -> tuple[int, int]:
-    by_name = _safe_dict(stats.get("tool_calls_by_name"))
+def _tool_entry_counts(by_name: dict, name: str) -> tuple[int, int]:
     entry = by_name.get(name, {})
     if not isinstance(entry, dict):
         return (0, 0)
@@ -220,17 +219,15 @@ def build_trial_diff(report_a: dict, report_b: dict, label_a: str, label_b: str)
     tokens_a = sum_prompt_tokens(report_a)
     tokens_b = sum_prompt_tokens(report_b)
 
-    all_tools = set()
-    for s in (stats_a, stats_b):
-        by_name = _safe_dict(s.get("tool_calls_by_name"))
-        all_tools.update(by_name.keys())
+    by_name_a = _safe_dict(stats_a.get("tool_calls_by_name"))
+    by_name_b = _safe_dict(stats_b.get("tool_calls_by_name"))
+    tools_a_set = set(by_name_a)
+    tools_b_set = set(by_name_b)
 
     tool_usage: list[ToolDiffEntry] = []
-    tools_a_set = set(_safe_dict(stats_a.get("tool_calls_by_name")).keys())
-    tools_b_set = set(_safe_dict(stats_b.get("tool_calls_by_name")).keys())
-    for name in sorted(all_tools):
-        sa, fa = _tool_counts(stats_a, name)
-        sb, fb = _tool_counts(stats_b, name)
+    for name in sorted(tools_a_set | tools_b_set):
+        sa, fa = _tool_entry_counts(by_name_a, name)
+        sb, fb = _tool_entry_counts(by_name_b, name)
         only_in = None
         if name in tools_a_set and name not in tools_b_set:
             only_in = "a"

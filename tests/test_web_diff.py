@@ -482,9 +482,10 @@ class TestDiffCli:
         import unittest.mock
 
         with unittest.mock.patch("calibra.cli.sys.exit") as mock_exit:
-            # Run the validation part only — mock out the server startup
+            # Mock uvicorn so the server doesn't start, and threading.Thread
+            # so the browser-opening daemon thread never spawns.
             with unittest.mock.patch("uvicorn.run"):
-                with unittest.mock.patch("webbrowser.open"):
+                with unittest.mock.patch("threading.Thread"):
                     try:
                         main(["diff", str(upper), str(good)])
                     except (SystemExit, Exception):
