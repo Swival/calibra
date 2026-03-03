@@ -15,6 +15,7 @@ from calibra.web.viewdata import (
     STATIC_DIR,
     TEMPLATES_DIR,
     build_task_cells,
+    build_trial_diff,
     build_variant_stats,
     campaign_stats,
     rank_variants,
@@ -240,3 +241,73 @@ def build_single_campaign(campaign_dir: Path, output_dir: Path | None = None) ->
     builder = _SiteBuilder(out)
     builder.build([campaign_dir], [summary])
     return out
+
+
+def load_diff_report(path: Path, label: str) -> tuple[dict, str]:
+    """Load and validate a trial report JSON file for diffing.
+
+    Returns (parsed_dict, raw_text). Raises ValueError on any validation problem.
+    Error messages preserve the wording used by the CLI so existing tests on
+    exact text remain stable.
+    """
+    if not path.exists():
+        raise ValueError(f"File {label} not found: {path}")
+    if path.suffix.lower() != ".json":
+        raise ValueError(f"File {label} is not a .json file: {path}")
+    try:
+        raw = path.read_text()
+        parsed = json.loads(raw)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+        raise ValueError(f"File {label}: {exc}")
+    if not isinstance(parsed, dict):
+        raise ValueError(f"File {label} is not a JSON object: {path}")
+    return parsed, raw
+
+
+def export_diff(path_a: Path, path_b: Path, output: Path) -> Path:
+    """Export a diff of two trial reports as a single self-contained HTML file.
+
+    Reads both JSON files, computes the diff, inlines all JS/CSS assets, and
+    writes the result to *output*. Returns *output*.
+
+    Raises ValueError for invalid input files, FileNotFoundError if the output
+    parent directory does not exist, and IsADirectoryError if *output* is an
+    existing directory.
+    """
+    output = output.resolve()
+    if output.is_dir():
+        raise IsADirectoryError(f"Output path is a directory: {output}")
+    if not output.parent.is_dir():
+        raise FileNotFoundError(f"Parent directory does not exist: {output.parent}")
+
+    report_a, raw_a = load_diff_report(path_a, "A")
+    report_b, raw_b = load_diff_report(path_b, "B")
+
+    label_a = path_a.name
+    label_b = path_b.name
+    diff = build_trial_diff(report_a, report_b, label_a, label_b)
+
+    inline_tailwind_js = (STATIC_DIR / "vendor" / "tailwindcss-browser-4.2.1.js").read_text()
+    inline_htmx_js = (STATIC_DIR / "vendor" / "htmx-2.0.8.min.js").read_text()
+    inline_style_css = (STATIC_DIR / "style.css").read_text()
+
+    env = _create_jinja_env()
+    html = env.get_template("diff.html").render(
+        root_path=".",
+        static_export=True,
+        inline_assets=True,
+        inline_tailwind_js=inline_tailwind_js,
+        inline_htmx_js=inline_htmx_js,
+        inline_style_css=inline_style_css,
+        a=str(path_a),
+        b=str(path_b),
+        diff=diff,
+        trial_a=report_a,
+        trial_b=report_b,
+        raw_a=raw_a,
+        raw_b=raw_b,
+        error=None,
+    )
+
+    _write_page(output, html)
+    return output

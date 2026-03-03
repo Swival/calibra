@@ -99,36 +99,42 @@ def cmd_compare(args):
 
 def cmd_diff(args):
     """Diff two trial report JSON files in the browser."""
-    import json
-    import tempfile
-    import urllib.parse
-    import webbrowser
     from pathlib import Path
+
+    from calibra.web.export import load_diff_report
 
     paths = []
     for label, raw in [("A", args.file_a), ("B", args.file_b)]:
         p = Path(raw).resolve(strict=False)
-        if not p.exists():
-            print(f"Error: File {label} not found: {raw}", file=sys.stderr)
-            sys.exit(1)
-        if p.suffix.lower() != ".json":
-            print(f"Error: File {label} is not a .json file: {raw}", file=sys.stderr)
-            sys.exit(1)
         try:
-            parsed = json.loads(p.read_text())
-        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
-            print(f"Error: File {label}: {exc}", file=sys.stderr)
+            load_diff_report(p, label)
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
-        if not isinstance(parsed, dict):
-            print(f"Error: File {label} is not a JSON object: {raw}", file=sys.stderr)
+        paths.append(p)
+
+    if args.export:
+        output = Path(args.export).resolve()
+        if output.is_dir():
+            print(f"Error: --export path is a directory: {output}", file=sys.stderr)
             sys.exit(1)
-        paths.append(str(p))
+        if not output.parent.is_dir():
+            print(f"Error: parent directory does not exist: {output.parent}", file=sys.stderr)
+            sys.exit(1)
+        from calibra.web.export import export_diff
+
+        export_diff(paths[0], paths[1], output)
+        print(f"Exported diff to {output}")
+        return
+
+    import tempfile
+    import threading
+    import urllib.parse
+    import webbrowser
 
     port = args.port
-    qs = urllib.parse.urlencode({"a": paths[0], "b": paths[1]})
+    qs = urllib.parse.urlencode({"a": str(paths[0]), "b": str(paths[1])})
     url = f"http://127.0.0.1:{port}/diff?{qs}"
-
-    import threading
 
     def _open():
         import time
@@ -214,6 +220,9 @@ def main(argv=None):
     p_diff.add_argument("file_a", help="First report JSON file")
     p_diff.add_argument("file_b", help="Second report JSON file")
     p_diff.add_argument("--port", type=int, default=8118, help="Port (default: 8118)")
+    p_diff.add_argument(
+        "--export", metavar="FILE", help="Export diff as a self-contained HTML file"
+    )
 
     # web
     p_web = sub.add_parser("web", help="Web interface for results")

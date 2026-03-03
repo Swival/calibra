@@ -4,8 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Calibra{% endblock %}</title>
+  {% if inline_assets %}
+  <script>{{ inline_tailwind_js | safe }}</script>
+  <script>{{ inline_htmx_js | safe }}</script>
+  {% else %}
   <script src="{{ root_path }}/static/vendor/tailwindcss-browser-4.2.1.js"></script>
   <script src="{{ root_path }}/static/vendor/htmx-2.0.8.min.js"></script>
+  {% endif %}
   <style type="text/tailwindcss">
     @theme {
       --font-mono: ui-monospace, 'IBM Plex Mono', 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
@@ -14,12 +19,16 @@
       --color-fail: #dc2626;
     }
   </style>
+  {% if inline_assets %}
+  <style>{{ inline_style_css | safe }}</style>
+  {% else %}
   <link rel="stylesheet" href="{{ root_path }}/static/style.css">
+  {% endif %}
   {% block head %}{% endblock %}
 </head>
 <body class="h-full bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
   <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between">
-    <a href="{{ root_path }}/" class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Calibra</a>
+    {% if static_export %}<span class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Calibra</span>{% else %}<a href="{{ root_path }}/" class="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">Calibra</a>{% endif %}
     <div class="flex items-center gap-4">
       {% block nav_right %}{% endblock %}
       <button id="theme-toggle" class="p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="Toggle dark mode">

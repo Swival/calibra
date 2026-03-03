@@ -1,12 +1,14 @@
 """Tests for the /diff trial report comparison feature."""
 
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
 
 from calibra.cli import main
 from calibra.web import create_app
+from calibra.web.export import export_diff, load_diff_report
 from calibra.web.viewdata import KpiDelta, build_trial_diff
 
 
@@ -499,3 +501,116 @@ class TestDiffCli:
         with pytest.raises(SystemExit) as exc_info:
             main(["diff", str(arr), str(good)])
         assert exc_info.value.code == 1
+
+    def test_export_writes_file(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "output.html"
+        main(["diff", str(a), str(b), "--export", str(out)])
+        assert out.is_file()
+
+    def test_export_dir_path_exits(self, report_files, tmp_path):
+        a, b = report_files
+        with pytest.raises(SystemExit):
+            main(["diff", str(a), str(b), "--export", str(tmp_path)])
+
+    def test_export_bad_parent_exits(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "nonexistent" / "diff.html"
+        with pytest.raises(SystemExit):
+            main(["diff", str(a), str(b), "--export", str(out)])
+
+
+class TestLoadDiffReport:
+    def test_valid_file(self, report_files):
+        a, _ = report_files
+        parsed, raw = load_diff_report(a, "A")
+        assert isinstance(parsed, dict)
+        assert isinstance(raw, str)
+        assert "model" in parsed
+
+    def test_nonexistent(self, tmp_path):
+        with pytest.raises(ValueError, match="File A not found"):
+            load_diff_report(tmp_path / "missing.json", "A")
+
+    def test_not_json_extension(self, tmp_path):
+        p = tmp_path / "report.txt"
+        p.write_text("{}")
+        with pytest.raises(ValueError, match="not a .json file"):
+            load_diff_report(p, "B")
+
+    def test_invalid_json(self, tmp_path):
+        p = tmp_path / "bad.json"
+        p.write_text("not json")
+        with pytest.raises(ValueError, match="File A"):
+            load_diff_report(p, "A")
+
+    def test_non_dict_root(self, tmp_path):
+        p = tmp_path / "arr.json"
+        p.write_text("[1, 2]")
+        with pytest.raises(ValueError, match="not a JSON object"):
+            load_diff_report(p, "A")
+
+
+class TestDiffExport:
+    def test_produces_html_file(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "diff.html"
+        result = export_diff(a, b, out)
+        assert result == out
+        assert out.is_file()
+        html = out.read_text()
+        assert "<!DOCTYPE html>" in html
+
+    def test_contains_diff_content(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "diff.html"
+        export_diff(a, b, out)
+        html = out.read_text()
+        assert "report_a.json" in html
+        assert "report_b.json" in html
+        assert 'data-test="kpi-tiles"' in html
+
+    def test_self_contained_no_static_refs(self, report_files, tmp_path):
+        """No external asset references remain — all JS/CSS is inlined."""
+        a, b = report_files
+        out = tmp_path / "diff.html"
+        export_diff(a, b, out)
+        html = out.read_text()
+        assert not re.search(r'src="[^"]*/static/', html)
+        assert not re.search(r'href="[^"]*/static/', html)
+
+    def test_no_file_picker(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "diff.html"
+        export_diff(a, b, out)
+        html = out.read_text()
+        assert 'data-test="file-picker"' not in html
+
+    def test_labels_from_filenames(self, tmp_path):
+        a = tmp_path / "trial-alpha.json"
+        b = tmp_path / "trial-beta.json"
+        _write_report(a)
+        _write_report(b)
+        out = tmp_path / "diff.html"
+        export_diff(a, b, out)
+        html = out.read_text()
+        assert "trial-alpha.json" in html
+        assert "trial-beta.json" in html
+
+    def test_brand_link_inert(self, report_files, tmp_path):
+        a, b = report_files
+        out = tmp_path / "diff.html"
+        export_diff(a, b, out)
+        html = out.read_text()
+        assert "<span" in html and ">Calibra</span>" in html
+        assert not re.search(r"<a [^>]*>Calibra</a>", html)
+
+    def test_export_dir_path_raises(self, report_files, tmp_path):
+        a, b = report_files
+        with pytest.raises(IsADirectoryError):
+            export_diff(a, b, tmp_path)
+
+    def test_export_bad_parent_raises(self, report_files, tmp_path):
+        a, b = report_files
+        with pytest.raises(FileNotFoundError, match="Parent directory"):
+            export_diff(a, b, tmp_path / "nonexistent" / "diff.html")
