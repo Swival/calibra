@@ -4,7 +4,7 @@ Campaigns are defined in TOML files, typically stored in `experiments/`.
 
 ## Minimal config
 
-The smallest working config needs a campaign name, a tasks directory, one model, and one set of agent instructions:
+The smallest working config needs a campaign name, a tasks directory, and at least one model:
 
 ```toml
 [campaign]
@@ -21,7 +21,7 @@ label = "default"
 agents_md = "AGENTS.md"
 ```
 
-The three optional dimensions (skills, mcp, environment) get defaults: `skills=none`, `mcp=none`, `environment=base`.
+The four optional dimensions (agent_instructions, skills, mcp, environment) get defaults when omitted: `agent_instructions=default` (empty agents_md), `skills=none`, `mcp=none`, `environment=base`.
 
 ## [campaign] section
 

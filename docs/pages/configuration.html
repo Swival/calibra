@@ -60,7 +60,7 @@
             <h1 id="campaign-configuration">Campaign Configuration</h1>
 <p>Campaigns are defined in TOML files, typically stored in <code>experiments/</code>.</p>
 <h2 id="minimal-config">Minimal config</h2>
-<p>The smallest working config needs a campaign name, a tasks directory, one model, and one set of agent instructions:</p>
+<p>The smallest working config needs a campaign name, a tasks directory, and at least one model:</p>
 <pre><code class="language-toml">[campaign]
 name = &quot;minimal&quot;
 tasks_dir = &quot;tasks&quot;
@@ -74,7 +74,7 @@ label = &quot;sonnet&quot;
 label = &quot;default&quot;
 agents_md = &quot;AGENTS.md&quot;
 </code></pre>
-<p>The three optional dimensions (skills, mcp, environment) get defaults: <code>skills=none</code>, <code>mcp=none</code>, <code>environment=base</code>.</p>
+<p>The four optional dimensions (agent_instructions, skills, mcp, environment) get defaults when omitted: <code>agent_instructions=default</code> (empty agents_md), <code>skills=none</code>, <code>mcp=none</code>, <code>environment=base</code>.</p>
 <h2 id="campaign-section">[campaign] section</h2>
 <p>Top-level campaign settings.</p>
 <table>

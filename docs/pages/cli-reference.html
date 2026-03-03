@@ -199,7 +199,7 @@ uv run calibra analyze results/model-shootout --output reports/
 <hr />
 <h2 id="calibra-diff">calibra diff</h2>
 <p>Diff two trial report JSON files side by side in the browser. This starts a local web server and opens the diff view automatically.</p>
-<pre><code>calibra diff &lt;file_a&gt; &lt;file_b&gt; [--port N]
+<pre><code>calibra diff &lt;file_a&gt; &lt;file_b&gt; [--port N] [--export FILE]
 </code></pre>
 <p>Both arguments are paths to trial report JSON files (as produced by <code>swival --report</code> or found in <code>results/&lt;campaign&gt;/&lt;task&gt;/</code>).</p>
 <table>
@@ -216,11 +216,17 @@ uv run calibra analyze results/model-shootout --output reports/
 <td><code>8118</code></td>
 <td>Port to bind</td>
 </tr>
+<tr>
+<td><code>--export FILE</code></td>
+<td>none</td>
+<td>Export diff as a self-contained HTML file</td>
+</tr>
 </tbody>
 </table>
-<p>The server binds to <code>127.0.0.1</code> only (not configurable) since it reads arbitrary local files. The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.</p>
+<p>By default, <code>calibra diff</code> starts a local web server and opens the diff in your browser. With <code>--export</code>, it writes a self-contained HTML file instead of launching a server. The server binds to <code>127.0.0.1</code> only (not configurable) since it reads arbitrary local files. The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.</p>
 <pre><code class="language-bash">uv run calibra diff /tmp/report-a.json /tmp/report-b.json
 uv run calibra diff results/run-a/task/variant_0.json results/run-b/task/variant_0.json --port 9000
+uv run calibra diff /tmp/report-a.json /tmp/report-b.json --export diff.html
 </code></pre>
 <hr />
 <h2 id="calibra-web-serve">calibra web serve</h2>
