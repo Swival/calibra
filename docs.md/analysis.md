@@ -93,7 +93,9 @@ Rounded to 4 decimal places.
 
 ### Statistical summaries
 
-For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places. The `review_rounds` stat summary is only included when at least one trial in the variant has review_rounds > 0.
+For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places.
+
+The `review_rounds` stat summary is only included when at least one trial in the variant has review_rounds > 0.
 
 The 95% confidence interval uses the formula `mean ± 1.96 × (std / sqrt(n))`.
 
@@ -123,7 +125,9 @@ The Pareto front identifies variants that are not dominated by any other variant
 
 ## Instability warnings
 
-Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 1.0 on turns, LLM time, or token usage, which indicates inconsistent behavior. Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing `repeat` in your config.
+Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 1.0 on turns, LLM time, or token usage, which indicates inconsistent behavior.
+
+Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing `repeat` in your config.
 
 ## Weighted pass rate
 
@@ -189,7 +193,9 @@ To compare two campaign runs (for example, before and after a change):
 uv run calibra compare results/run-a results/run-b
 ```
 
-This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial. The output is written to `comparison.md` in the output directory. See [Advanced Topics](advanced.md#comparing-campaigns) for details.
+This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial.
+
+The output is written to `comparison.md` in the output directory. See [Advanced Topics](advanced.md#comparing-campaigns) for details.
 
 ## Diffing individual trials
 

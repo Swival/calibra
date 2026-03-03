@@ -97,7 +97,8 @@
 <h3 id="campaign-list">Campaign list</h3>
 <p>The landing page shows all campaigns found in the results directory. Each campaign card displays the campaign name, number of variants and tasks, total trial count, overall weighted pass rate (color-coded), and the last updated timestamp. Click a campaign to drill in.</p>
 <h3 id="campaign-detail">Campaign detail</h3>
-<p>This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate. Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.</p>
+<p>This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate.</p>
+<p>Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.</p>
 <h3 id="task-heatmap">Task heatmap</h3>
 <p>Accessible from the campaign detail page, the heatmap shows a matrix with tasks as rows and variants as columns. Each cell shows the pass rate for that task+variant pair, color-coded from green (high) to red (low). Hovering over a cell shows sample count, mean turns, and mean tokens. This view quickly reveals which tasks are hard for which variants.</p>
 <h3 id="variant-detail">Variant detail</h3>
@@ -107,12 +108,14 @@
 <h3 id="comparison">Comparison</h3>
 <p>Compare two campaigns side by side with dropdown selectors for campaign A and campaign B, a pass rate comparison chart for common variants, a delta table showing improvement or regression for each variant, and effect size indicators.</p>
 <h3 id="trial-diff">Trial diff</h3>
-<p>Compare two individual trial report JSON files side by side. Access this page at <code>/diff</code> with query parameters <code>a</code> and <code>b</code> pointing to local file paths, or use <code>calibra diff</code> from the CLI which opens this page automatically. The diff view shows KPI delta tiles (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions) with color-coded deltas (green when the B value is lower, red when higher), outcome and verification badges, model and provider info, a settings diff table (only shown when settings differ), per-tool usage comparison with "only in A/B" badges, side-by-side event timelines, and collapsible raw JSON panels.</p>
+<p>Compare two individual trial report JSON files side by side. Access this page at <code>/diff</code> with query parameters <code>a</code> and <code>b</code> pointing to local file paths, or use <code>calibra diff</code> from the CLI which opens this page automatically.</p>
+<p>The diff view shows KPI delta tiles (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions) with color-coded deltas (green when the B value is lower, red when higher), outcome and verification badges, model and provider info, a settings diff table (only shown when settings differ), per-tool usage comparison with "only in A/B" badges, side-by-side event timelines, and collapsible raw JSON panels.</p>
 <h2 id="static-html-export">Static HTML export</h2>
 <p>You can build a static site to share without running a server:</p>
 <pre><code class="language-bash">uv run calibra web build results/ --output site/
 </code></pre>
-<p>The export generates a multi-page static site mirroring the dashboard structure, with an index page, per-campaign pages, variant detail pages, task heatmaps, and trial inspector pages. Static assets (CSS, JS) are copied into a <code>static/</code> directory alongside the HTML. The default output location is <code>&lt;results_dir&gt;/web</code>. You can upload the output directory to a static host or check it into a repository.</p>
+<p>The export generates a multi-page static site mirroring the dashboard structure, with an index page, per-campaign pages, variant detail pages, task heatmaps, and trial inspector pages. Static assets (CSS, JS) are copied into a <code>static/</code> directory alongside the HTML.</p>
+<p>The default output location is <code>&lt;results_dir&gt;/web</code>. You can upload the output directory to a static host or check it into a repository.</p>
 <h2 id="rest-api">REST API</h2>
 <p>The web dashboard also exposes a JSON API for programmatic access:</p>
 <table>

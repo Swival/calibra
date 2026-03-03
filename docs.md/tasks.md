@@ -158,7 +158,9 @@ The metadata is loaded during task discovery but is not currently written to tri
 
 Calibra discovers tasks by scanning the `tasks_dir` specified in your campaign config. The scan is alphabetical; files (non-directories) are silently skipped, and every subdirectory must be a valid task. If any task fails validation or no tasks are found, the entire campaign is rejected.
 
-A task is valid when `task.md` exists and is non-empty, `env/` exists and is a directory, and (if present) `verify.sh` is executable. You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of `tasks_dir`).
+A task is valid when `task.md` exists and is non-empty, `env/` exists and is a directory, and (if present) `verify.sh` is executable.
+
+You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of `tasks_dir`).
 
 ## Real-world task examples
 

@@ -141,7 +141,9 @@ Both arguments are paths to trial report JSON files (as produced by `swival --re
 | `--port N`       | `8118`  | Port to bind                                   |
 | `--export FILE`  | none    | Export diff as a self-contained HTML file       |
 
-By default, `calibra diff` starts a local web server and opens the diff in your browser. With `--export`, it writes a self-contained HTML file instead of launching a server. The server binds to `127.0.0.1` only (not configurable) since it reads arbitrary local files. The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.
+By default, `calibra diff` starts a local web server and opens the diff in your browser. With `--export`, it writes a self-contained HTML file instead of launching a server. The server binds to `127.0.0.1` only (not configurable) since it reads arbitrary local files.
+
+The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.
 
 ```bash
 uv run calibra diff /tmp/report-a.json /tmp/report-b.json

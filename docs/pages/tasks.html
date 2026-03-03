@@ -162,7 +162,8 @@ skills = [&quot;file-creation&quot;, &quot;stdout&quot;]
 <p>The metadata is loaded during task discovery but is not currently written to trial reports.</p>
 <h2 id="task-discovery">Task discovery</h2>
 <p>Calibra discovers tasks by scanning the <code>tasks_dir</code> specified in your campaign config. The scan is alphabetical; files (non-directories) are silently skipped, and every subdirectory must be a valid task. If any task fails validation or no tasks are found, the entire campaign is rejected.</p>
-<p>A task is valid when <code>task.md</code> exists and is non-empty, <code>env/</code> exists and is a directory, and (if present) <code>verify.sh</code> is executable. You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of <code>tasks_dir</code>).</p>
+<p>A task is valid when <code>task.md</code> exists and is non-empty, <code>env/</code> exists and is a directory, and (if present) <code>verify.sh</code> is executable.</p>
+<p>You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of <code>tasks_dir</code>).</p>
 <h2 id="real-world-task-examples">Real-world task examples</h2>
 <h3 id="code-generation">Code generation</h3>
 <pre><code>tasks/fibonacci/

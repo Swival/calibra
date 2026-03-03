@@ -94,7 +94,8 @@ label = &quot;sonnet&quot;
 label = &quot;default&quot;
 agents_md = &quot;AGENTS.md&quot;
 </code></pre>
-<p>This is the simplest possible campaign: one model, one set of instructions, no skills, no MCP, no environment overlay. The three optional dimensions (skills, mcp, environment) get default values of <code>none</code>, <code>none</code>, and <code>base</code>. Setting <code>repeat = 3</code> runs each variant+task combination three times to measure consistency.</p>
+<p>This is the simplest possible campaign: one model, one set of instructions, no skills, no MCP, no environment overlay. The three optional dimensions (skills, mcp, environment) get default values of <code>none</code>, <code>none</code>, and <code>base</code>.</p>
+<p>Setting <code>repeat = 3</code> runs each variant+task combination three times to measure consistency.</p>
 <h2 id="3-validate-the-config">3. Validate the config</h2>
 <p>Before running, check that everything is wired up correctly:</p>
 <pre><code class="language-bash">uv run calibra validate experiments/my-first-campaign.toml

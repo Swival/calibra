@@ -32,7 +32,9 @@ The landing page shows all campaigns found in the results directory. Each campai
 
 ### Campaign detail
 
-This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate. Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.
+This is the main analysis view for a campaign. At the top you'll see KPI tiles for overall pass rate, variant count, task count, total trials, median turns, and failure rate.
+
+Below that is a pass rate bar chart with variants sorted by pass rate and color-coded by performance, an efficiency scatter plot showing token usage on the x-axis versus pass rate on the y-axis with the Pareto front highlighted, and a sortable variant rankings table with pass rate, turns, tokens, LLM time, efficiency scores, and a review rounds column (shown only when the campaign used a reviewer). Click any variant row to see its detail page.
 
 ### Task heatmap
 
@@ -52,7 +54,9 @@ Compare two campaigns side by side with dropdown selectors for campaign A and ca
 
 ### Trial diff
 
-Compare two individual trial report JSON files side by side. Access this page at `/diff` with query parameters `a` and `b` pointing to local file paths, or use `calibra diff` from the CLI which opens this page automatically. The diff view shows KPI delta tiles (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions) with color-coded deltas (green when the B value is lower, red when higher), outcome and verification badges, model and provider info, a settings diff table (only shown when settings differ), per-tool usage comparison with "only in A/B" badges, side-by-side event timelines, and collapsible raw JSON panels.
+Compare two individual trial report JSON files side by side. Access this page at `/diff` with query parameters `a` and `b` pointing to local file paths, or use `calibra diff` from the CLI which opens this page automatically.
+
+The diff view shows KPI delta tiles (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions) with color-coded deltas (green when the B value is lower, red when higher), outcome and verification badges, model and provider info, a settings diff table (only shown when settings differ), per-tool usage comparison with "only in A/B" badges, side-by-side event timelines, and collapsible raw JSON panels.
 
 ## Static HTML export
 
@@ -62,7 +66,9 @@ You can build a static site to share without running a server:
 uv run calibra web build results/ --output site/
 ```
 
-The export generates a multi-page static site mirroring the dashboard structure, with an index page, per-campaign pages, variant detail pages, task heatmaps, and trial inspector pages. Static assets (CSS, JS) are copied into a `static/` directory alongside the HTML. The default output location is `<results_dir>/web`. You can upload the output directory to a static host or check it into a repository.
+The export generates a multi-page static site mirroring the dashboard structure, with an index page, per-campaign pages, variant detail pages, task heatmaps, and trial inspector pages. Static assets (CSS, JS) are copied into a `static/` directory alongside the HTML.
+
+The default output location is `<results_dir>/web`. You can upload the output directory to a static host or check it into a repository.
 
 ## REST API
 

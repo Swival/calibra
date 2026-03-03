@@ -85,7 +85,9 @@ Tests one dimension at a time. It starts with a baseline (the first variant in C
 mode = "ablation"
 ```
 
-This is useful for isolating the effect of each dimension. If your baseline is `sonnet_default_none_none_base`, ablation includes `haiku_default_none_none_base` (model differs), `codex_default_none_none_base` (model differs), `sonnet_detailed_none_none_base` (instructions differ), `sonnet_default_full_none_base` (skills differ), and so on. But it would not include `haiku_detailed_none_none_base`, because two dimensions differ from the baseline.
+This is useful for isolating the effect of each dimension.
+
+If your baseline is `sonnet_default_none_none_base`, ablation includes `haiku_default_none_none_base` (model differs), `codex_default_none_none_base` (model differs), `sonnet_detailed_none_none_base` (instructions differ), `sonnet_default_full_none_base` (skills differ), and so on. But it would not include `haiku_detailed_none_none_base`, because two dimensions differ from the baseline.
 
 ## Budget management
 
@@ -147,7 +149,11 @@ The first matching class wins. If nothing matches, the trial is considered succe
 
 ### CLI mode failure classification
 
-When a reviewer is configured, trials run via the `swival` CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as `timeout`. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from `tool_calls_failed > 0`. However, if the report says `task` but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to `provider`. When no report is available, stderr pattern matching is the sole classification input. When `--quiet` is passed (the default unless verbose mode is active), stderr may be empty in some failure cases, resulting in a `task` classification as a fallback.
+When a reviewer is configured, trials run via the `swival` CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as `timeout`. If exit code is 0, report-based classification is used (same as Session mode).
+
+For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from `tool_calls_failed > 0`. However, if the report says `task` but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to `provider`. When no report is available, stderr pattern matching is the sole classification input.
+
+When `--quiet` is passed (the default unless verbose mode is active), stderr may be empty in some failure cases, resulting in a `task` classification as a fallback.
 
 ### Retry behavior
 
@@ -166,11 +172,15 @@ Between retries, Calibra waits using exponential backoff: `min(backoff_base_s ×
 
 ### When to retry what
 
-Provider errors are almost always worth retrying; rate limits and server errors are transient. Infrastructure errors are usually worth retrying too, since network hiccups and temporary disk issues tend to resolve themselves. Tool errors are sometimes worth retrying if the tool was temporarily unavailable. Timeouts are rarely worth retrying, because if the model can't finish in time, retrying usually gives the same result. Task failures (wrong answers) are usually not worth retrying unless you're specifically measuring variance. A wrong answer is a signal, not an error.
+Provider errors are almost always worth retrying; rate limits and server errors are transient. Infrastructure errors are usually worth retrying too, since network hiccups and temporary disk issues tend to resolve themselves. Tool errors are sometimes worth retrying if the tool was temporarily unavailable.
+
+Timeouts are rarely worth retrying, because if the model can't finish in time, retrying usually gives the same result. Task failures (wrong answers) are usually not worth retrying unless you're specifically measuring variance. A wrong answer is a signal, not an error.
 
 ## Trial seed determinism
 
-Calibra computes a deterministic seed for each trial using `SHA256("base_seed:task_name:variant_label:repeat_index")`, taking the first 4 bytes as an integer. This means the same (task, variant, repeat) triple always gets the same seed, changing the base seed changes all trial seeds, adding a new task or variant doesn't affect existing seeds, and results are reproducible given the same seed and model.
+Calibra computes a deterministic seed for each trial using `SHA256("base_seed:task_name:variant_label:repeat_index")`, taking the first 4 bytes as an integer.
+
+This means the same (task, variant, repeat) triple always gets the same seed, changing the base seed changes all trial seeds, adding a new task or variant doesn't affect existing seeds, and results are reproducible given the same seed and model.
 
 ## Comparing campaigns
 
@@ -205,7 +215,9 @@ B: after
 
 ## Config hashing and reproducibility
 
-Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using `--resume`, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content (with `name` and `description` excluded), so cosmetic changes (whitespace, comments) and name/description edits don't affect it, but any other semantic change does.
+Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using `--resume`, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified.
+
+The hash is computed from the normalized config content (with `name` and `description` excluded), so cosmetic changes (whitespace, comments) and name/description edits don't affect it, but any other semantic change does.
 
 ## Working with large matrices
 

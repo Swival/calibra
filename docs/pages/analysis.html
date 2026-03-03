@@ -178,7 +178,8 @@
 </code></pre>
 <p>Rounded to 4 decimal places.</p>
 <h3 id="statistical-summaries">Statistical summaries</h3>
-<p>For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places. The <code>review_rounds</code> stat summary is only included when at least one trial in the variant has review_rounds &gt; 0.</p>
+<p>For each numeric metric (turns, tool_calls_total, tool_calls_failed, llm_time_s, tool_time_s, wall_time_s, compactions, prompt_tokens_est, and conditionally review_rounds), Calibra computes the mean, median, standard deviation, min, max, 90th percentile, and the lower and upper bounds of a 95% confidence interval. All values are rounded to 3 decimal places.</p>
+<p>The <code>review_rounds</code> stat summary is only included when at least one trial in the variant has review_rounds &gt; 0.</p>
 <p>The 95% confidence interval uses the formula <code>mean ± 1.96 × (std / sqrt(n))</code>.</p>
 <h3 id="derived-metrics">Derived metrics</h3>
 <p>Two efficiency metrics are computed from the aggregates. <strong>score_per_1k_tokens</strong> is <code>pass_rate × 1000 / tokens.mean</code>, which tells you how many tasks you solve per 1,000 tokens spent. <strong>pass_rate_per_minute</strong> is <code>pass_rate × 60 / wall_time.mean</code>, which tells you how many tasks you solve per minute of wall time.</p>
@@ -195,7 +196,8 @@
 <h2 id="pareto-front">Pareto front</h2>
 <p>The Pareto front identifies variants that are not dominated by any other variant on two dimensions: pass rate (higher is better) and token usage (lower is better). A variant is on the Pareto front if no other variant has both a higher pass rate and lower token usage. These are the "efficient" configurations: you can't improve one metric without sacrificing the other.</p>
 <h2 id="instability-warnings">Instability warnings</h2>
-<p>Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 1.0 on turns, LLM time, or token usage, which indicates inconsistent behavior. Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing <code>repeat</code> in your config.</p>
+<p>Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 1.0 on turns, LLM time, or token usage, which indicates inconsistent behavior.</p>
+<p>Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing <code>repeat</code> in your config.</p>
 <h2 id="weighted-pass-rate">Weighted pass rate</h2>
 <p>When computing an overall campaign pass rate across variants with different trial counts, Calibra uses a weighted average:</p>
 <pre><code>weighted_pass_rate = sum(variant_pass_rate × variant_n_trials) / sum(variant_n_trials)
@@ -242,7 +244,8 @@
 <p>To compare two campaign runs (for example, before and after a change):</p>
 <pre><code class="language-bash">uv run calibra compare results/run-a results/run-b
 </code></pre>
-<p>This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial. The output is written to <code>comparison.md</code> in the output directory. See <a href="advanced.html#comparing-campaigns">Advanced Topics</a> for details.</p>
+<p>This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial.</p>
+<p>The output is written to <code>comparison.md</code> in the output directory. See <a href="advanced.html#comparing-campaigns">Advanced Topics</a> for details.</p>
 <h2 id="diffing-individual-trials">Diffing individual trials</h2>
 <p>To compare two specific trial report JSON files side by side:</p>
 <pre><code class="language-bash">uv run calibra diff results/run-a/task/variant_0.json results/run-b/task/variant_0.json

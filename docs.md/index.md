@@ -6,7 +6,8 @@ Under the hood, Calibra drives [Swival](https://swival.dev) sessions and collect
 
 ## How it works
 
-You give Calibra a set of **tasks** (a prompt, starter files, and an optional verification script) along with a **matrix** of configurations to test. Calibra expands the matrix into every combination (called a "variant"), runs each variant against each task, optionally multiple times, classifies failures, retries transient errors, tracks your budget, and then aggregates the results with statistical summaries. Optionally, a **reviewer** can be configured to evaluate agent answers after each run, retrying with feedback until the answer is accepted or max rounds are reached. The output is a set of reports in JSON, Markdown, and CSV, and optionally an interactive web dashboard.
+You give Calibra a set of **tasks** (a prompt, starter files, and an optional verification script) along with a **matrix** of configurations to test. Calibra expands the matrix into every combination (called a "variant"), runs each variant against each task, optionally multiple times, classifies failures, retries transient errors, tracks your budget, and then aggregates the results with statistical summaries. 
+Optionally, a **reviewer** can be configured to evaluate agent answers after each run, retrying with feedback until the answer is accepted or max rounds are reached. The output is a set of reports in JSON, Markdown, and CSV, and optionally an interactive web dashboard.
 
 ## Core concepts
 

@@ -52,7 +52,9 @@ label = "default"
 agents_md = "AGENTS.md"
 ```
 
-This is the simplest possible campaign: one model, one set of instructions, no skills, no MCP, no environment overlay. The three optional dimensions (skills, mcp, environment) get default values of `none`, `none`, and `base`. Setting `repeat = 3` runs each variant+task combination three times to measure consistency.
+This is the simplest possible campaign: one model, one set of instructions, no skills, no MCP, no environment overlay. The three optional dimensions (skills, mcp, environment) get default values of `none`, `none`, and `base`.
+
+Setting `repeat = 3` runs each variant+task combination three times to measure consistency.
 
 ## 3. Validate the config
 

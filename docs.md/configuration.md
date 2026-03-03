@@ -298,7 +298,9 @@ exclude = { mcp = "none" }
 
 ## [session] options
 
-The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings. Campaign-wide defaults go in a top-level `[session]` table, while per-model overrides go either directly on the `[[matrix.model]]` entry or in an inline `session` sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like `extra_body` combine rather than replace.
+The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings.
+
+Campaign-wide defaults go in a top-level `[session]` table, while per-model overrides go either directly on the `[[matrix.model]]` entry or in an inline `session` sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like `extra_body` combine rather than replace.
 
 ```toml
 [session]
@@ -364,7 +366,9 @@ These parameters are set by Calibra internally and cannot appear in session opti
 
 ### yolo and allowed_commands
 
-By default, Calibra sets `yolo=true` so the agent runs without interactive command approval. When you set `allowed_commands` without explicitly setting `yolo`, Calibra defaults `yolo` to `false` so the allowlist takes effect. If you explicitly set both `allowed_commands` and `yolo = true`, the allowlist becomes a no-op. Calibra will warn about this but not reject it.
+By default, Calibra sets `yolo=true` so the agent runs without interactive command approval. When you set `allowed_commands` without explicitly setting `yolo`, Calibra defaults `yolo` to `false` so the allowlist takes effect.
+
+If you explicitly set both `allowed_commands` and `yolo = true`, the allowlist becomes a no-op. Calibra will warn about this but not reject it.
 
 ### no_skills guard
 
