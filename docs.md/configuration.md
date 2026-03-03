@@ -176,7 +176,7 @@ Each variant gets a label by joining dimension labels with underscores in a fixe
 
 ## [reviewer] section
 
-Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped - the reviewer determines pass/fail.
+Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer receives the task prompt (`task.md`) as its goal — the same prompt the agent was given — so it can judge whether the agent's work satisfies the original task. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped - the reviewer determines pass/fail.
 
 | Field        | Type   | Default    | Description                                              |
 | ------------ | ------ | ---------- | -------------------------------------------------------- |

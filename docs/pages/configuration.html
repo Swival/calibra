@@ -344,7 +344,7 @@ overlay = &quot;envs/production-config&quot;
 <h2 id="variant-labels">Variant labels</h2>
 <p>Each variant gets a label by joining dimension labels with underscores in a fixed order: <code>{model}_{agent_instructions}_{skills}_{mcp}_{environment}</code>. So with <code>model=sonnet</code>, <code>agent_instructions=default</code>, <code>skills=full</code>, <code>mcp=none</code>, <code>environment=base</code>, the resulting label is <code>sonnet_default_full_none_base</code>. These labels are used in file paths, API endpoints, and filter expressions.</p>
 <h2 id="reviewer-section">[reviewer] section</h2>
-<p>Enables Swival's reviewer feature. When configured, Calibra runs trials via the <code>swival</code> CLI instead of the Session API, passing <code>--reviewer</code> and <code>--report</code> flags. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, <code>verify.sh</code> is skipped - the reviewer determines pass/fail.</p>
+<p>Enables Swival's reviewer feature. When configured, Calibra runs trials via the <code>swival</code> CLI instead of the Session API, passing <code>--reviewer</code> and <code>--report</code> flags. The reviewer receives the task prompt (<code>task.md</code>) as its goal — the same prompt the agent was given — so it can judge whether the agent's work satisfies the original task. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, <code>verify.sh</code> is skipped - the reviewer determines pass/fail.</p>
 <table>
 <thead>
 <tr>
