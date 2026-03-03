@@ -197,6 +197,32 @@ uv run calibra analyze results/model-shootout --output reports/
 <pre><code class="language-bash">uv run calibra compare results/run-v1 results/run-v2
 </code></pre>
 <hr />
+<h2 id="calibra-diff">calibra diff</h2>
+<p>Diff two trial report JSON files side by side in the browser. This starts a local web server and opens the diff view automatically.</p>
+<pre><code>calibra diff &lt;file_a&gt; &lt;file_b&gt; [--port N]
+</code></pre>
+<p>Both arguments are paths to trial report JSON files (as produced by <code>swival --report</code> or found in <code>results/&lt;campaign&gt;/&lt;task&gt;/</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port N</code></td>
+<td><code>8118</code></td>
+<td>Port to bind</td>
+</tr>
+</tbody>
+</table>
+<p>The server binds to <code>127.0.0.1</code> only (not configurable) since it reads arbitrary local files. The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.</p>
+<pre><code class="language-bash">uv run calibra diff /tmp/report-a.json /tmp/report-b.json
+uv run calibra diff results/run-a/task/variant_0.json results/run-b/task/variant_0.json --port 9000
+</code></pre>
+<hr />
 <h2 id="calibra-web-serve">calibra web serve</h2>
 <p>Launch the interactive web dashboard.</p>
 <pre><code>calibra web serve &lt;results_dir&gt; [--port N] [--host ADDR] [--open]
