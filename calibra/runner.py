@@ -288,6 +288,12 @@ def _classify_cli_failure(
     return classify_failure(RuntimeError(stderr_text), None, timed_out=False)
 
 
+def _deferred_cleanup(worker: threading.Thread, tmpdir: Path):
+    """Wait for the worker thread to exit, then remove its workspace."""
+    worker.join()
+    shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 def run_single_trial(
     spec: TrialSpec,
     campaign: Campaign,
@@ -299,6 +305,7 @@ def run_single_trial(
     tmpdir = setup_workspace(spec, spec.variant)
     start = time.monotonic()
     timed_out = False
+    worker = None
 
     try:
         from swival import Session
@@ -380,7 +387,12 @@ def run_single_trial(
 
     finally:
         if not keep_workdirs:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+            if worker is not None and worker.is_alive():
+                threading.Thread(
+                    target=_deferred_cleanup, args=(worker, tmpdir), daemon=True
+                ).start()
+            else:
+                shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def run_trial_cli(
