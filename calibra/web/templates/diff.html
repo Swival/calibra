@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Calibra: Diff{% endblock %}
+
+{% block nav_right %}
+<a href="{{ root_path }}/" class="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">All campaigns</a>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <nav class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+    <a href="{{ root_path }}/" class="hover:text-slate-700 dark:hover:text-slate-200">Campaigns</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-900 dark:text-white">Diff</span>
+  </nav>
+  <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Trial Report Diff</h1>
+</div>
+
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 mb-8" data-test="file-picker">
+  <form method="get" action="{{ root_path }}/diff" class="flex flex-col gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">File A</label>
+        <input type="text" name="a" value="{{ a }}" placeholder="/path/to/report-a.json"
+          class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono">
+      </div>
+      <div>
+        <label class="block text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">File B</label>
+        <input type="text" name="b" value="{{ b }}" placeholder="/path/to/report-b.json"
+          class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono">
+      </div>
+    </div>
+    <div>
+      <button type="submit" class="rounded-md bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium transition-colors">Compare</button>
+    </div>
+  </form>
+</div>
+
+{% if error %}
+<div class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-6 text-center mb-8" data-test="error-message">
+  <p class="text-red-700 dark:text-red-400 font-medium">{{ error }}</p>
+</div>
+{% endif %}
+
+{% if diff %}
+
+<div class="grid grid-cols-2 gap-4 mb-6">
+  <div class="flex items-center gap-3">
+    <h2 class="text-lg font-semibold text-slate-900 dark:text-white truncate" title="{{ diff.label_a }}">{{ diff.label_a }}</h2>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {% if diff.outcome_a == 'success' %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+      {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">{{ diff.outcome_a }}</span>
+    {% if diff.verified_a is true %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">verified</span>
+    {% elif diff.verified_a is false %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">unverified</span>
+    {% endif %}
+    {% if diff.model_a != 'unknown' or diff.provider_a != 'unknown' %}
+    <span class="text-xs text-slate-500 dark:text-slate-400">{% if diff.provider_a != 'unknown' %}{{ diff.provider_a }}/{% endif %}{{ diff.model_a }}</span>
+    {% endif %}
+  </div>
+  <div class="flex items-center gap-3">
+    <h2 class="text-lg font-semibold text-slate-900 dark:text-white truncate" title="{{ diff.label_b }}">{{ diff.label_b }}</h2>
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {% if diff.outcome_b == 'success' %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+      {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">{{ diff.outcome_b }}</span>
+    {% if diff.verified_b is true %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400">verified</span>
+    {% elif diff.verified_b is false %}
+    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">unverified</span>
+    {% endif %}
+    {% if diff.model_b != 'unknown' or diff.provider_b != 'unknown' %}
+    <span class="text-xs text-slate-500 dark:text-slate-400">{% if diff.provider_b != 'unknown' %}{{ diff.provider_b }}/{% endif %}{{ diff.model_b }}</span>
+    {% endif %}
+  </div>
+</div>
+
+{% macro kpi_tile(label, kpi, fmt) %}
+{% set delta_color %}{% if kpi.delta < 0 %}text-teal-600 dark:text-teal-400{% elif kpi.delta > 0 %}text-red-600 dark:text-red-400{% else %}text-slate-400 dark:text-slate-500{% endif %}{% endset %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4" data-test="kpi-tile" data-kpi="{{ label }}">
+  <span class="block text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">{{ label }}</span>
+  <div class="flex justify-between items-baseline mb-1">
+    <span class="text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ fmt | format(kpi.a|num) }}</span>
+    <span class="text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">{{ fmt | format(kpi.b|num) }}</span>
+  </div>
+  <div class="text-sm font-mono tabular-nums {{ delta_color }}" data-test="kpi-delta">
+    {% if kpi.delta > 0 %}+{% endif %}{{ fmt | format(kpi.delta|num) }}{% if kpi.pct is not none %} ({% if kpi.pct > 0 %}+{% endif %}{{ "%.1f" | format(kpi.pct * 100) }}%){% else %} (n/a){% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8" data-test="kpi-tiles">
+  {{ kpi_tile("Wall Time", diff.wall_time, "%.1fs") }}
+  {{ kpi_tile("Turns", diff.turns, "%.0f") }}
+  {{ kpi_tile("Tokens", diff.tokens, "%.0f") }}
+  {{ kpi_tile("LLM Time", diff.llm_time, "%.1fs") }}
+  {{ kpi_tile("Tool Time", diff.tool_time, "%.1fs") }}
+  {{ kpi_tile("LLM Calls", diff.llm_calls, "%.0f") }}
+  {{ kpi_tile("Tool Calls", diff.tool_calls_total, "%.0f") }}
+  {{ kpi_tile("Tool Failures", diff.tool_calls_failed, "%.0f") }}
+  {{ kpi_tile("Compactions", diff.compactions, "%.0f") }}
+</div>
+
+{% if diff.settings_diff %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto mb-8" data-test="settings-diff">
+  <h3 class="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">Settings Diff</h3>
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 dark:bg-slate-700/50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Setting</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">A</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">B</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+      {% for key, (val_a, val_b) in diff.settings_diff.items() %}
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors duration-100">
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white">{{ key }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ val_a if val_a is not none else "—" }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ val_b if val_b is not none else "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if diff.tool_usage %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto mb-8" data-test="tool-usage">
+  <h3 class="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">Tool Usage</h3>
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 dark:bg-slate-700/50">
+      <tr>
+        <th class="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Tool</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">OK (A)</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Fail (A)</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">OK (B)</th>
+        <th class="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Fail (B)</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+      {% for entry in diff.tool_usage %}
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors duration-100
+        {% if entry.only_in == 'a' %}bg-blue-50/50 dark:bg-blue-900/10{% elif entry.only_in == 'b' %}bg-teal-50/50 dark:bg-teal-900/10{% endif %}">
+        <td class="px-4 py-2 font-mono text-sm text-slate-900 dark:text-white">
+          {{ entry.tool }}
+          {% if entry.only_in == 'a' %}<span class="text-xs text-blue-500 dark:text-blue-400 ml-1">A only</span>{% endif %}
+          {% if entry.only_in == 'b' %}<span class="text-xs text-teal-500 dark:text-teal-400 ml-1">B only</span>{% endif %}
+        </td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ entry.succeeded_a }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums {% if entry.failed_a > 0 %}text-red-600 dark:text-red-400{% else %}text-slate-700 dark:text-slate-300{% endif %}">{{ entry.failed_a }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums text-slate-700 dark:text-slate-300">{{ entry.succeeded_b }}</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums {% if entry.failed_b > 0 %}text-red-600 dark:text-red-400{% else %}text-slate-700 dark:text-slate-300{% endif %}">{{ entry.failed_b }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% macro timeline_column(trial, label) %}
+{% set timeline = trial.get("timeline", []) %}
+{% if timeline %}
+<div>
+  <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">{{ label }}</h3>
+  <div class="relative ml-4">
+    <div class="absolute left-2 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+    {% for event in timeline %}
+    {% set etype = event.get("type", "unknown") %}
+    <div class="relative pl-8 pb-4" data-event-type="{{ etype }}">
+      {% if etype == "llm_call" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-slate-400 dark:bg-slate-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-xs">
+        <span class="font-medium text-slate-700 dark:text-slate-300">LLM Call</span>
+        {% if event.get("duration_s") %}<span class="text-slate-500 dark:text-slate-400 ml-1">{{ "%.1f" | format(event.duration_s|num) }}s</span>{% endif %}
+        {% if event.get("prompt_tokens_est") %}<span class="text-slate-500 dark:text-slate-400 ml-1">{{ event.prompt_tokens_est }} tok</span>{% endif %}
+        {% if event.get("is_retry") %}<span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 ml-1">retry</span>{% endif %}
+      </div>
+      {% elif etype == "tool_call" %}
+      {% set tool_ok = event.get("succeeded", true) %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full {% if tool_ok %}bg-teal-500{% else %}bg-red-500{% endif %} border-2 border-white dark:border-slate-900"></div>
+      <div class="text-xs">
+        <span class="font-medium text-slate-700 dark:text-slate-300">{{ event.get("name", "tool") }}</span>
+        <span class="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium ml-1
+          {% if tool_ok %}bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400
+          {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">{% if tool_ok %}ok{% else %}fail{% endif %}</span>
+        {% if event.get("duration_s") %}<span class="text-slate-500 dark:text-slate-400 ml-1">{{ "%.1f" | format(event.duration_s|num) }}s</span>{% endif %}
+      </div>
+      {% elif etype == "compaction" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-amber-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-xs">
+        <span class="font-medium text-amber-700 dark:text-amber-400">Compaction</span>
+        {% if event.get("tokens_before") and event.get("tokens_after") %}
+        <span class="text-slate-500 dark:text-slate-400 ml-1">{{ event.tokens_before }} → {{ event.tokens_after }}</span>
+        {% endif %}
+      </div>
+      {% elif etype == "review" %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-blue-500 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-xs">
+        <span class="font-medium text-blue-700 dark:text-blue-400">Review</span>
+        {% if event.get("exit_code") is not none %}<span class="text-slate-500 dark:text-slate-400 ml-1">exit {{ event.exit_code }}</span>{% endif %}
+      </div>
+      {% else %}
+      <div class="absolute left-0 top-1 w-4 h-4 rounded-full bg-slate-300 dark:bg-slate-600 border-2 border-white dark:border-slate-900"></div>
+      <div class="text-xs text-slate-500 dark:text-slate-400">{{ etype }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div>
+  <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">{{ label }}</h3>
+  <p class="text-sm text-slate-400 dark:text-slate-500">No timeline data.</p>
+</div>
+{% endif %}
+{% endmacro %}
+
+<div class="mb-8">
+  <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Timelines</h2>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" data-test="timelines">
+    {{ timeline_column(trial_a, diff.label_a) }}
+    {{ timeline_column(trial_b, diff.label_b) }}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" data-test="raw-json">
+  <details>
+    <summary class="text-sm font-semibold text-slate-900 dark:text-white cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Raw JSON (A)</summary>
+    <pre class="mt-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-mono overflow-x-auto text-slate-600 dark:text-slate-400 max-h-96 overflow-y-auto" id="raw-json-a"></pre>
+  </details>
+  <details>
+    <summary class="text-sm font-semibold text-slate-900 dark:text-white cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">Raw JSON (B)</summary>
+    <pre class="mt-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 text-xs font-mono overflow-x-auto text-slate-600 dark:text-slate-400 max-h-96 overflow-y-auto" id="raw-json-b"></pre>
+  </details>
+</div>
+
+{% elif not error and not a and not b %}
+<div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-12 text-center">
+  <p class="text-slate-500 dark:text-slate-400">Enter two report file paths to compare.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if diff %}
+<script>
+  var elA = document.getElementById('raw-json-a');
+  var elB = document.getElementById('raw-json-b');
+  if (elA) elA.textContent = {{ raw_a | tojson }};
+  if (elB) elB.textContent = {{ raw_b | tojson }};
+</script>
+{% endif %}
+{% endblock %}

@@ -190,3 +190,13 @@ uv run calibra compare results/run-a results/run-b
 ```
 
 This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial. The output is written to `comparison.md` in the output directory. See [Advanced Topics](advanced.md#comparing-campaigns) for details.
+
+## Diffing individual trials
+
+To compare two specific trial report JSON files side by side:
+
+```bash
+uv run calibra diff results/run-a/task/variant_0.json results/run-b/task/variant_0.json
+```
+
+This opens a browser-based diff view showing KPI deltas, outcome/verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON. Unlike `calibra compare` which works at the campaign level (aggregate metrics across variants), `calibra diff` works at the individual trial level. The diff page is also accessible in the web dashboard at `/diff`.

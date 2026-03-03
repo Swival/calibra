@@ -97,6 +97,56 @@ def cmd_compare(args):
     compare_campaigns(args.dir_a, args.dir_b, output_dir=args.output)
 
 
+def cmd_diff(args):
+    """Diff two trial report JSON files in the browser."""
+    import json
+    import tempfile
+    import urllib.parse
+    import webbrowser
+    from pathlib import Path
+
+    paths = []
+    for label, raw in [("A", args.file_a), ("B", args.file_b)]:
+        p = Path(raw).resolve(strict=False)
+        if not p.exists():
+            print(f"Error: File {label} not found: {raw}", file=sys.stderr)
+            sys.exit(1)
+        if p.suffix.lower() != ".json":
+            print(f"Error: File {label} is not a .json file: {raw}", file=sys.stderr)
+            sys.exit(1)
+        try:
+            parsed = json.loads(p.read_text())
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+            print(f"Error: File {label}: {exc}", file=sys.stderr)
+            sys.exit(1)
+        if not isinstance(parsed, dict):
+            print(f"Error: File {label} is not a JSON object: {raw}", file=sys.stderr)
+            sys.exit(1)
+        paths.append(str(p))
+
+    port = args.port
+    qs = urllib.parse.urlencode({"a": paths[0], "b": paths[1]})
+    url = f"http://127.0.0.1:{port}/diff?{qs}"
+
+    import threading
+
+    def _open():
+        import time
+
+        time.sleep(0.5)
+        webbrowser.open(url)
+
+    threading.Thread(target=_open, daemon=True).start()
+
+    import uvicorn
+
+    from calibra.web import create_app
+
+    with tempfile.TemporaryDirectory() as tmp:
+        app = create_app(Path(tmp))
+        uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+
+
 def cmd_web_serve(args):
     """Serve the web interface."""
     from pathlib import Path
@@ -159,6 +209,12 @@ def main(argv=None):
     p_cmp.add_argument("dir_b", help="Second campaign results directory")
     p_cmp.add_argument("--output", default=None, help="Output directory")
 
+    # diff
+    p_diff = sub.add_parser("diff", help="Diff two trial report JSON files in the browser")
+    p_diff.add_argument("file_a", help="First report JSON file")
+    p_diff.add_argument("file_b", help="Second report JSON file")
+    p_diff.add_argument("--port", type=int, default=8118, help="Port (default: 8118)")
+
     # web
     p_web = sub.add_parser("web", help="Web interface for results")
     web_sub = p_web.add_subparsers(dest="web_command")
@@ -193,6 +249,7 @@ def main(argv=None):
             "analyze": cmd_analyze,
             "show": cmd_show,
             "compare": cmd_compare,
+            "diff": cmd_diff,
         }[args.command]
 
     try:

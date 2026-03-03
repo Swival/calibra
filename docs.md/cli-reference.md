@@ -126,6 +126,29 @@ uv run calibra compare results/run-v1 results/run-v2
 
 ---
 
+## calibra diff
+
+Diff two trial report JSON files side by side in the browser. This starts a local web server and opens the diff view automatically.
+
+```
+calibra diff <file_a> <file_b> [--port N]
+```
+
+Both arguments are paths to trial report JSON files (as produced by `swival --report` or found in `results/<campaign>/<task>/`).
+
+| Option     | Default | Description  |
+| ---------- | ------- | ------------ |
+| `--port N` | `8118`  | Port to bind |
+
+The server binds to `127.0.0.1` only (not configurable) since it reads arbitrary local files. The diff view shows KPI deltas (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions), outcome and verification status, settings differences, per-tool usage comparison, side-by-side event timelines, and raw JSON.
+
+```bash
+uv run calibra diff /tmp/report-a.json /tmp/report-b.json
+uv run calibra diff results/run-a/task/variant_0.json results/run-b/task/variant_0.json --port 9000
+```
+
+---
+
 ## calibra web serve
 
 Launch the interactive web dashboard.

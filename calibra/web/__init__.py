@@ -19,6 +19,7 @@ from calibra.web.viewdata import (
     STATIC_DIR,
     TEMPLATES_DIR,
     build_task_cells,
+    build_trial_diff,
     build_variant_stats,
     rank_variants,
 )
@@ -226,6 +227,66 @@ def create_app(results_dir: Path) -> FastAPI:
                 "b": b,
                 "comparison": comparison,
                 "comparison_json": comparison_json,
+                "error": error,
+            },
+        )
+
+    @app.get("/diff")
+    def diff_page(request: Request, a: str | None = None, b: str | None = None):
+        diff = None
+        error = None
+        raw_a = ""
+        raw_b = ""
+        trial_a: dict = {}
+        trial_b: dict = {}
+
+        if a or b:
+            errors: list[str] = []
+            reports: list[dict] = [None, None]  # type: ignore[list-item]
+            raws: list[str] = ["", ""]
+            for idx, (label, val) in enumerate([("A", a), ("B", b)]):
+                if not val:
+                    errors.append(f"File {label}: no path provided")
+                    continue
+                p = Path(val).resolve(strict=False)
+                if not p.exists():
+                    errors.append(f"File {label} not found: {val}")
+                elif p.suffix.lower() != ".json":
+                    errors.append(f"File {label} is not a .json file: {val}")
+                else:
+                    try:
+                        text = p.read_text()
+                        parsed = json.loads(text)
+                        if not isinstance(parsed, dict):
+                            errors.append(f"File {label} is not a JSON object: {val}")
+                        else:
+                            reports[idx] = parsed
+                            raws[idx] = text
+                    except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+                        errors.append(f"File {label}: {exc}")
+
+            if errors:
+                error = "; ".join(errors)
+            elif reports[0] is not None and reports[1] is not None:
+                label_a = Path(a).name  # type: ignore[arg-type]
+                label_b = Path(b).name  # type: ignore[arg-type]
+                diff = build_trial_diff(reports[0], reports[1], label_a, label_b)
+                trial_a = reports[0]
+                trial_b = reports[1]
+                raw_a = raws[0]
+                raw_b = raws[1]
+
+        return app.state.templates.TemplateResponse(
+            request,
+            "diff.html",
+            {
+                "a": a or "",
+                "b": b or "",
+                "diff": diff,
+                "trial_a": trial_a,
+                "trial_b": trial_b,
+                "raw_a": raw_a,
+                "raw_b": raw_b,
                 "error": error,
             },
         )

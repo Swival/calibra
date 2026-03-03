@@ -50,6 +50,10 @@ View a single trial in full detail: a formatted stats table (turns, timing, toke
 
 Compare two campaigns side by side with dropdown selectors for campaign A and campaign B, a pass rate comparison chart for common variants, a delta table showing improvement or regression for each variant, and effect size indicators.
 
+### Trial diff
+
+Compare two individual trial report JSON files side by side. Access this page at `/diff` with query parameters `a` and `b` pointing to local file paths, or use `calibra diff` from the CLI which opens this page automatically. The diff view shows KPI delta tiles (wall time, turns, tokens, LLM time, tool time, LLM calls, tool calls, compactions) with color-coded deltas (green when the B value is lower, red when higher), outcome and verification badges, model and provider info, a settings diff table (only shown when settings differ), per-tool usage comparison with "only in A/B" badges, side-by-side event timelines, and collapsible raw JSON panels.
+
 ## Static HTML export
 
 You can build a static site to share without running a server:

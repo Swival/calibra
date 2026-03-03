@@ -153,6 +153,7 @@ calibra run <config> [--workers N]     # run trials in parallel
 calibra analyze <results_dir>          # aggregate metrics and write reports
 calibra show <report.json>             # inspect a single trial
 calibra compare <dir_a> <dir_b>        # side-by-side comparison
+calibra diff <file_a> <file_b>         # diff two trial reports in the browser
 calibra web serve <results_dir>        # launch interactive dashboard
 calibra web build <results_dir>        # export static HTML
 ```

@@ -38,7 +38,7 @@ Make sure the CLI works:
 uv run calibra --help
 ```
 
-You should see a list of subcommands: `validate`, `run`, `analyze`, `show`, `compare`, and `web`.
+You should see a list of subcommands: `validate`, `run`, `analyze`, `show`, `compare`, `diff`, and `web`.
 
 ## Project structure
 

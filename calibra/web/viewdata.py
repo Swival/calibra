@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
-from calibra.utils import safe_num, safe_rate, weighted_pass_rate
+from calibra.utils import safe_num, safe_rate, sum_prompt_tokens, weighted_pass_rate
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 STATIC_DIR = Path(__file__).parent / "static"
@@ -141,3 +142,139 @@ def build_variant_stats(
         )
 
     return task_stats, failure_counts, tool_agg
+
+
+@dataclass
+class KpiDelta:
+    a: float
+    b: float
+    delta: float
+    pct: float | None
+
+    @staticmethod
+    def build(a_raw: object, b_raw: object) -> KpiDelta:
+        a = safe_num(a_raw)
+        b = safe_num(b_raw)
+        delta = b - a
+        pct = (delta / a) if a != 0 else None
+        return KpiDelta(a, b, delta, pct)
+
+
+@dataclass
+class ToolDiffEntry:
+    tool: str
+    succeeded_a: int
+    failed_a: int
+    succeeded_b: int
+    failed_b: int
+    only_in: str | None
+
+
+@dataclass
+class TrialDiff:
+    label_a: str
+    label_b: str
+    wall_time: KpiDelta
+    turns: KpiDelta
+    tokens: KpiDelta
+    llm_time: KpiDelta
+    tool_time: KpiDelta
+    llm_calls: KpiDelta
+    tool_calls_total: KpiDelta
+    tool_calls_failed: KpiDelta
+    compactions: KpiDelta
+    outcome_a: str
+    outcome_b: str
+    verified_a: bool | None
+    verified_b: bool | None
+    tool_usage: list[ToolDiffEntry]
+    settings_diff: dict[str, tuple]
+    model_a: str
+    model_b: str
+    provider_a: str
+    provider_b: str
+
+
+def _safe_dict(val: object) -> dict:
+    return val if isinstance(val, dict) else {}
+
+
+def _tool_counts(stats: dict, name: str) -> tuple[int, int]:
+    by_name = _safe_dict(stats.get("tool_calls_by_name"))
+    entry = by_name.get(name, {})
+    if not isinstance(entry, dict):
+        return (0, 0)
+    return (int(safe_num(entry.get("succeeded", 0))), int(safe_num(entry.get("failed", 0))))
+
+
+def build_trial_diff(report_a: dict, report_b: dict, label_a: str, label_b: str) -> TrialDiff:
+    cal_a = _safe_dict(report_a.get("calibra"))
+    cal_b = _safe_dict(report_b.get("calibra"))
+    stats_a = _safe_dict(report_a.get("stats"))
+    stats_b = _safe_dict(report_b.get("stats"))
+    result_a = _safe_dict(report_a.get("result"))
+    result_b = _safe_dict(report_b.get("result"))
+    settings_a = _safe_dict(report_a.get("settings"))
+    settings_b = _safe_dict(report_b.get("settings"))
+
+    tokens_a = sum_prompt_tokens(report_a)
+    tokens_b = sum_prompt_tokens(report_b)
+
+    all_tools = set()
+    for s in (stats_a, stats_b):
+        by_name = _safe_dict(s.get("tool_calls_by_name"))
+        all_tools.update(by_name.keys())
+
+    tool_usage: list[ToolDiffEntry] = []
+    tools_a_set = set(_safe_dict(stats_a.get("tool_calls_by_name")).keys())
+    tools_b_set = set(_safe_dict(stats_b.get("tool_calls_by_name")).keys())
+    for name in sorted(all_tools):
+        sa, fa = _tool_counts(stats_a, name)
+        sb, fb = _tool_counts(stats_b, name)
+        only_in = None
+        if name in tools_a_set and name not in tools_b_set:
+            only_in = "a"
+        elif name in tools_b_set and name not in tools_a_set:
+            only_in = "b"
+        tool_usage.append(ToolDiffEntry(name, sa, fa, sb, fb, only_in))
+    tool_usage.sort(key=lambda e: -(e.succeeded_a + e.failed_a + e.succeeded_b + e.failed_b))
+
+    all_setting_keys = set(settings_a.keys()) | set(settings_b.keys())
+    settings_diff: dict[str, tuple] = {}
+    for key in sorted(all_setting_keys):
+        val_a = settings_a.get(key)
+        val_b = settings_b.get(key)
+        if val_a != val_b:
+            settings_diff[key] = (val_a, val_b)
+
+    return TrialDiff(
+        label_a=label_a,
+        label_b=label_b,
+        wall_time=KpiDelta.build(cal_a.get("wall_time_s", 0), cal_b.get("wall_time_s", 0)),
+        turns=KpiDelta.build(stats_a.get("turns", 0), stats_b.get("turns", 0)),
+        tokens=KpiDelta.build(tokens_a, tokens_b),
+        llm_time=KpiDelta.build(
+            stats_a.get("total_llm_time_s", 0), stats_b.get("total_llm_time_s", 0)
+        ),
+        tool_time=KpiDelta.build(
+            stats_a.get("total_tool_time_s", 0), stats_b.get("total_tool_time_s", 0)
+        ),
+        llm_calls=KpiDelta.build(stats_a.get("llm_calls", 0), stats_b.get("llm_calls", 0)),
+        tool_calls_total=KpiDelta.build(
+            stats_a.get("tool_calls_total", 0), stats_b.get("tool_calls_total", 0)
+        ),
+        tool_calls_failed=KpiDelta.build(
+            stats_a.get("tool_calls_failed", 0), stats_b.get("tool_calls_failed", 0)
+        ),
+        compactions=KpiDelta.build(stats_a.get("compactions", 0), stats_b.get("compactions", 0)),
+        outcome_a=result_a.get("outcome", "unknown"),
+        outcome_b=result_b.get("outcome", "unknown"),
+        verified_a=cal_a.get("verified"),
+        verified_b=cal_b.get("verified"),
+        tool_usage=tool_usage,
+        settings_diff=settings_diff,
+        model_a=report_a.get("model", "unknown"),
+        model_b=report_b.get("model", "unknown"),
+        provider_a=report_a.get("provider", "unknown"),
+        provider_b=report_b.get("provider", "unknown"),
+    )
