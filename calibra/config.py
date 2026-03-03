@@ -258,7 +258,7 @@ def load_campaign(path: str | Path) -> Campaign:
     name = _require(camp, "name", "[campaign]")
     description = camp.get("description", "")
     repeat = camp.get("repeat", 1)
-    max_turns = camp.get("max_turns", 50)
+    max_turns = camp.get("max_turns", 250)
     timeout_s = camp.get("timeout_s", 300)
     seed = camp.get("seed", 42)
     tasks_dir = _resolve(base, _require(camp, "tasks_dir", "[campaign]"))

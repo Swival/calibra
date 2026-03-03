@@ -33,7 +33,7 @@ Top-level campaign settings.
 | `description` | string | `""`       | Human-readable description.                                                                         |
 | `tasks_dir`   | string | *required* | Path to the tasks directory (relative to config file or absolute).                                  |
 | `repeat`      | int    | `1`        | Number of times to repeat each variant+task pair. Higher values give better statistical confidence. |
-| `max_turns`   | int    | `50`       | Maximum turns the agent can take per trial.                                                         |
+| `max_turns`   | int    | `250`      | Maximum turns the agent can take per trial.                                                         |
 | `timeout_s`   | int    | `300`      | Wall-clock timeout per trial in seconds.                                                            |
 | `seed`        | int    | `42`       | Base seed for deterministic trial seeds.                                                            |
 

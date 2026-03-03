@@ -255,7 +255,7 @@ agents_md = "agents.md"
     config = _write_campaign(tmp_path, minimal)
     campaign = load_campaign(config)
     assert campaign.repeat == 1
-    assert campaign.max_turns == 50
+    assert campaign.max_turns == 250
     assert campaign.timeout_s == 300
     assert campaign.seed == 42
     assert campaign.sampling.mode == "full"
