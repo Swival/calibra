@@ -58,23 +58,17 @@
         </aside>
         <article class="docs-content">
             <h1 id="installation">Installation</h1>
-<p>Calibra requires Python 3.13 or later, <a href="https://docs.astral.sh/uv/">uv</a> as its package manager, and <a href="https://github.com/anthropics/swival">Swival</a> as the underlying agent framework.</p>
+<p>Calibra requires Python 3.13 or later, <a href="https://docs.astral.sh/uv/">uv</a> as its package manager, and <a href="https://swival.dev">Swival</a> as the underlying agent framework.</p>
 <h2 id="install-calibra">Install Calibra</h2>
 <p>Clone the repository and install with <code>uv</code>:</p>
 <pre><code class="language-bash">git clone &lt;repo-url&gt; calibra
 cd calibra
 uv sync
 </code></pre>
-<p>This installs the core package with two dependencies: <code>swival</code> (the agent framework) and <code>rich</code> (for terminal formatting).</p>
+<p>This installs the core package with its dependencies: <code>swival</code> (the agent framework), <code>rich</code> (for terminal formatting), <code>fastapi</code>, <code>uvicorn</code>, and <code>jinja2</code> (for the web dashboard).</p>
 <h2 id="optional-extras">Optional extras</h2>
-<p>Calibra ships with two optional dependency groups. For chart generation in reports, install <code>matplotlib</code>:</p>
+<p>For chart generation in reports, install <code>matplotlib</code>:</p>
 <pre><code class="language-bash">uv sync --extra charts
-</code></pre>
-<p>For the interactive web dashboard (FastAPI, Uvicorn, Jinja2):</p>
-<pre><code class="language-bash">uv sync --extra web
-</code></pre>
-<p>Or grab everything at once:</p>
-<pre><code class="language-bash">uv sync --extra charts --extra web
 </code></pre>
 <h2 id="development-dependencies">Development dependencies</h2>
 <p>If you plan to contribute or run the test suite, install the dev group to get <code>pytest</code> and <code>ruff</code>:</p>
@@ -87,6 +81,7 @@ uv sync
 <p>You should see a list of subcommands: <code>validate</code>, <code>run</code>, <code>analyze</code>, <code>show</code>, <code>compare</code>, and <code>web</code>.</p>
 <h2 id="project-structure">Project structure</h2>
 <pre><code>calibra/
+  __init__.py     # Package init
   cli.py          # CLI entrypoint
   config.py       # TOML config parsing
   matrix.py       # Variant expansion
@@ -99,8 +94,9 @@ uv sync
   report.py       # Report generation
   compare.py      # Campaign comparison
   show.py         # Trial pretty-printing
+  verbose.py      # Verbose output formatting
   utils.py        # Shared utilities
-  web/            # Web dashboard (optional)
+  web/            # Web dashboard
 experiments/      # Campaign config files
 tasks/            # Task definitions
 results/          # Trial output (generated)

@@ -162,7 +162,7 @@ seed = 123
 <tr>
 <td><code>model</code></td>
 <td>string</td>
-<td>Model identifier (e.g., <code>"claude-sonnet-4.6"</code>)</td>
+<td>Model identifier (e.g., <code>"claude-sonnet-4.6"</code>). Optional; omit if the provider auto-selects.</td>
 </tr>
 <tr>
 <td><code>label</code></td>
@@ -204,13 +204,14 @@ label = &quot;codex&quot;
 session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } }
 </code></pre>
 <p>Session options placed directly on the model entry (like <code>base_url</code> above) are merged with the <code>session</code> sub-table. If the same key appears in both, the <code>session</code> sub-table wins.</p>
-<h3 id="matrixagent_instructions-required">[[matrix.agent_instructions]] (required)</h3>
-<p>At least one entry is required. This controls the <code>AGENTS.md</code> file copied into each trial workspace.</p>
+<h3 id="matrixagent_instructions-optional">[[matrix.agent_instructions]] (optional)</h3>
+<p>Controls the <code>AGENTS.md</code> file copied into each trial workspace. If omitted, defaults to a single <code>"default"</code> variant with an empty <code>agents_md</code>.</p>
 <table>
 <thead>
 <tr>
 <th>Field</th>
 <th>Type</th>
+<th>Default</th>
 <th>Description</th>
 </tr>
 </thead>
@@ -218,11 +219,13 @@ session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } 
 <tr>
 <td><code>label</code></td>
 <td>string</td>
+<td></td>
 <td>Unique label within instructions</td>
 </tr>
 <tr>
 <td><code>agents_md</code></td>
 <td>string</td>
+<td><code>""</code></td>
 <td>Path to the AGENTS.md file</td>
 </tr>
 </tbody>
@@ -392,7 +395,7 @@ max_rounds = 3
 <td><code>max_total_tokens</code></td>
 <td>int</td>
 <td><code>0</code> (disabled)</td>
-<td>Cancel remaining trials after this many tokens</td>
+<td>Cancel remaining trials after this many estimated prompt tokens</td>
 </tr>
 <tr>
 <td><code>max_cost_usd</code></td>
@@ -420,7 +423,7 @@ require_price_coverage = true
 &quot;anthropic/claude-haiku-4.5&quot; = 0.25
 &quot;openrouter/openai/gpt-5.3-codex&quot; = 1.25
 </code></pre>
-<p>Keys are <code>"provider/model"</code> strings. Values are cost per 1,000 tokens. Calibra converts these to <code>(provider, model)</code> tuples internally.</p>
+<p>Keys are <code>"provider/model"</code> strings. Values are cost per 1,000 estimated prompt tokens. Calibra converts these to <code>(provider, model)</code> tuples internally.</p>
 <h2 id="retry-section">[retry] section</h2>
 <p>Controls retry behavior per failure class. Each failure class has its own retry limit.</p>
 <table>
@@ -671,7 +674,7 @@ label = &quot;sonnet&quot;
 <h3 id="blocked-options">Blocked options</h3>
 <p><code>system_prompt</code>, <code>no_system_prompt</code>, and <code>no_instructions</code> are unconditionally blocked because they conflict with the agent instructions dimension.</p>
 <h3 id="yolo-and-allowed_commands">yolo and allowed_commands</h3>
-<p>By default, Calibra sets <code>yolo=true</code> so the agent runs without interactive command approval. When you set <code>allowed_commands</code>, Calibra automatically flips <code>yolo</code> to <code>false</code> so the allowlist takes effect. If you explicitly set both <code>allowed_commands</code> and <code>yolo = true</code>, the allowlist becomes a no-op. Calibra will warn about this but not reject it.</p>
+<p>By default, Calibra sets <code>yolo=true</code> so the agent runs without interactive command approval. When you set <code>allowed_commands</code> without explicitly setting <code>yolo</code>, Calibra defaults <code>yolo</code> to <code>false</code> so the allowlist takes effect. If you explicitly set both <code>allowed_commands</code> and <code>yolo = true</code>, the allowlist becomes a no-op. Calibra will warn about this but not reject it.</p>
 <h3 id="no_skills-guard">no_skills guard</h3>
 <p>Setting <code>no_skills = true</code> is allowed only when all skills variants in the matrix have empty <code>skills_dirs</code>. If any skills variant has actual directories, <code>no_skills</code> would silently neutralize the skills dimension, so Calibra rejects it.</p>
 <h3 id="type-validation">Type validation</h3>

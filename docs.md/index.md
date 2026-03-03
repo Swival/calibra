@@ -2,7 +2,7 @@
 
 Calibra is a benchmarking harness for evaluating coding agents. You define a set of coding tasks and a matrix of configurations to test (different models, instructions, skills, MCP servers, and environments) and Calibra runs every combination, collects structured metrics, and produces statistical reports.
 
-Under the hood, Calibra drives [Swival](https://github.com/anthropics/swival) sessions and collects structured metrics about each trial.
+Under the hood, Calibra drives [Swival](https://swival.dev) sessions and collects structured metrics about each trial.
 
 ## How it works
 

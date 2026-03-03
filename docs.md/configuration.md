@@ -58,13 +58,13 @@ The matrix defines what you're testing. Calibra takes the Cartesian product of a
 
 At least one model entry is required. Each entry specifies a provider, a model identifier, and a label. You can also attach per-model session options either directly on the model entry or via an inline `session` sub-table (see [Session options](#session-options) below).
 
-| Field                | Type   | Description                                                       |
-| -------------------- | ------ | ----------------------------------------------------------------- |
-| `provider`           | string | Provider name (e.g., `"anthropic"`, `"openrouter"`)               |
-| `model`              | string | Model identifier (e.g., `"claude-sonnet-4.6"`)                    |
-| `label`              | string | Unique label within models (used in variant names and file paths) |
-| `session`            | table  | Per-model session option overrides (optional, see below)          |
-| *any session option* | varies | Session options can also be placed directly on the model entry    |
+| Field                | Type   | Description                                                                                  |
+| -------------------- | ------ | -------------------------------------------------------------------------------------------- |
+| `provider`           | string | Provider name (e.g., `"anthropic"`, `"openrouter"`)                                          |
+| `model`              | string | Model identifier (e.g., `"claude-sonnet-4.6"`). Optional; omit if the provider auto-selects. |
+| `label`              | string | Unique label within models (used in variant names and file paths)                            |
+| `session`            | table  | Per-model session option overrides (optional, see below)                                     |
+| *any session option* | varies | Session options can also be placed directly on the model entry                               |
 
 ```toml
 [[matrix.model]]
@@ -92,14 +92,14 @@ session = { extra_body = { chat_template_kwargs = { enable_thinking = false } } 
 
 Session options placed directly on the model entry (like `base_url` above) are merged with the `session` sub-table. If the same key appears in both, the `session` sub-table wins.
 
-### [[matrix.agent_instructions]] (required)
+### [[matrix.agent_instructions]] (optional)
 
-At least one entry is required. This controls the `AGENTS.md` file copied into each trial workspace.
+Controls the `AGENTS.md` file copied into each trial workspace. If omitted, defaults to a single `"default"` variant with an empty `agents_md`.
 
-| Field       | Type   | Description                      |
-| ----------- | ------ | -------------------------------- |
-| `label`     | string | Unique label within instructions |
-| `agents_md` | string | Path to the AGENTS.md file       |
+| Field       | Type   | Default | Description                      |
+| ----------- | ------ | ------- | -------------------------------- |
+| `label`     | string |         | Unique label within instructions |
+| `agents_md` | string | `""`    | Path to the AGENTS.md file       |
 
 ```toml
 [[matrix.agent_instructions]]
@@ -202,11 +202,11 @@ Trial reports include `review_rounds` (from Swival's stats) and `reviewer_verdic
 
 Controls total resource usage across all trials.
 
-| Field                    | Type  | Default          | Description                                    |
-| ------------------------ | ----- | ---------------- | ---------------------------------------------- |
-| `max_total_tokens`       | int   | `0` (disabled)   | Cancel remaining trials after this many tokens |
-| `max_cost_usd`           | float | `0.0` (disabled) | Cancel remaining trials after this cost        |
-| `require_price_coverage` | bool  | `false`          | Require `prices.toml` entries for all models   |
+| Field                    | Type  | Default          | Description                                                     |
+| ------------------------ | ----- | ---------------- | --------------------------------------------------------------- |
+| `max_total_tokens`       | int   | `0` (disabled)   | Cancel remaining trials after this many estimated prompt tokens |
+| `max_cost_usd`           | float | `0.0` (disabled) | Cancel remaining trials after this cost                         |
+| `require_price_coverage` | bool  | `false`          | Require `prices.toml` entries for all models                    |
 
 ```toml
 [budget]
@@ -227,7 +227,7 @@ If you use budget tracking or `require_price_coverage`, create a `prices.toml` f
 "openrouter/openai/gpt-5.3-codex" = 1.25
 ```
 
-Keys are `"provider/model"` strings. Values are cost per 1,000 tokens. Calibra converts these to `(provider, model)` tuples internally.
+Keys are `"provider/model"` strings. Values are cost per 1,000 estimated prompt tokens. Calibra converts these to `(provider, model)` tuples internally.
 
 ## [retry] section
 
@@ -364,7 +364,7 @@ These parameters are set by Calibra internally and cannot appear in session opti
 
 ### yolo and allowed_commands
 
-By default, Calibra sets `yolo=true` so the agent runs without interactive command approval. When you set `allowed_commands`, Calibra automatically flips `yolo` to `false` so the allowlist takes effect. If you explicitly set both `allowed_commands` and `yolo = true`, the allowlist becomes a no-op. Calibra will warn about this but not reject it.
+By default, Calibra sets `yolo=true` so the agent runs without interactive command approval. When you set `allowed_commands` without explicitly setting `yolo`, Calibra defaults `yolo` to `false` so the allowlist takes effect. If you explicitly set both `allowed_commands` and `yolo = true`, the allowlist becomes a no-op. Calibra will warn about this but not reject it.
 
 ### no_skills guard
 

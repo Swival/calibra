@@ -1,14 +1,6 @@
 # Web Dashboard
 
-Calibra includes an interactive web interface for browsing campaign results. It requires the `[web]` optional dependencies.
-
-## Setup
-
-Install the web dependencies:
-
-```bash
-uv sync --extra web
-```
+Calibra includes an interactive web interface for browsing campaign results. The web dependencies (FastAPI, Uvicorn, Jinja2) are included in the core install.
 
 ## Launching the dashboard
 
@@ -60,13 +52,13 @@ Compare two campaigns side by side with dropdown selectors for campaign A and ca
 
 ## Static HTML export
 
-You can build a self-contained HTML file to share without running a server:
+You can build a static site to share without running a server:
 
 ```bash
-uv run calibra web build results/ --output dist/
+uv run calibra web build results/ --output site/
 ```
 
-The export bundles all data from `summary.json` files, inlines all JavaScript and CSS (Tailwind, Plotly, HTMX), and produces a single HTML file that works offline. It uses a schema version for forward compatibility. You can share the file via email, upload it to a static host, or check it into a repository.
+The export generates a multi-page static site mirroring the dashboard structure, with an index page, per-campaign pages, variant detail pages, task heatmaps, and trial inspector pages. Static assets (CSS, JS) are copied into a `static/` directory alongside the HTML. The default output location is `<results_dir>/web`. You can upload the output directory to a static host or check it into a repository.
 
 ## REST API
 
@@ -97,4 +89,4 @@ curl "http://127.0.0.1:8118/api/compare?a=run-a&b=run-b"
 
 ## Dashboard features
 
-The web interface supports dark mode (toggle in the header, persisted in the browser), keyboard shortcuts for navigating between pages, column sorting by clicking table headers, a responsive layout that works on different screen sizes, and auto-refresh via the API.
+The web interface supports dark mode (toggle in the header, persisted in the browser), keyboard shortcuts for navigating between pages, column sorting by clicking table headers, a responsive layout that works on different screen sizes, and manual cache refresh via `POST /api/reload`.

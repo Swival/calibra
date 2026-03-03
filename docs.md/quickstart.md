@@ -76,7 +76,7 @@ See exactly what would execute without running anything:
 uv run calibra run experiments/my-first-campaign.toml --dry-run
 ```
 
-This prints each trial that would be executed: task name, variant label, and repeat index.
+This prints each variant label along with summary counts (tasks, repeats, total trials).
 
 ## 5. Run the campaign
 

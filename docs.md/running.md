@@ -24,7 +24,7 @@ To see the full trial plan without executing anything:
 uv run calibra run experiments/model-shootout.toml --dry-run
 ```
 
-This expands the matrix, applies constraints and sampling, then prints every trial that would run. It's useful for verifying that filters and constraints produce the expected set of trials.
+This expands the matrix, applies constraints and sampling, then prints every variant label along with summary counts (tasks, repeats, total trials). It's useful for verifying that filters and constraints produce the expected set of variants.
 
 ## Running a campaign
 
@@ -115,13 +115,13 @@ For each trial, Calibra sets up the workspace as described above, then computes 
 
 ### Session mode (default)
 
-When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `allowed_commands` is set, `yolo` is automatically flipped to `false` so the allowlist takes effect. Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
+When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `allowed_commands` is set without explicitly setting `yolo`, it defaults to `false` so the allowlist takes effect. Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
 
 ### Reviewer mode
 
 When a `[reviewer]` is configured, Calibra runs the `swival` CLI as a subprocess instead of using the Session API. This is necessary because the reviewer feature is CLI-only in Swival, and `Session.ask()` returns `report=None` so retry round data would be invisible to metrics and budget tracking.
 
-The CLI invocation includes `--report` (to get the full JSON report with timeline events), `--reviewer` (the reviewer command), `--max-review-rounds`, `--quiet`, `--no-history`, and all session options mapped to their CLI flag equivalents. Swival handles the full reviewer loop internally - initial run plus up to `max_rounds` retry rounds.
+The CLI invocation includes `--report` (to get the full JSON report with timeline events), `--reviewer` (the reviewer command), `--max-review-rounds`, `--no-history`, and all session options mapped to their CLI flag equivalents. `--quiet` is included unless `calibra run` was invoked with `--verbose`. Swival handles the full reviewer loop internally - initial run plus up to `max_rounds` retry rounds.
 
 To prevent user or project config from leaking into trials, Calibra sets `XDG_CONFIG_HOME` to an empty temp directory (preventing `~/.config/swival/config.toml` from loading), deletes any `swival.toml` that may have been copied from the task's `env/` or overlay, and passes `--no-mcp` unless the variant has explicit MCP config.
 
@@ -129,15 +129,25 @@ After the subprocess completes, Calibra reads the report JSON, determines `verif
 
 ## Monitoring progress
 
-Calibra logs progress to stderr as trials complete:
+Calibra prints progress to stdout as trials complete. By default, a compact format is used:
 
 ```
-[1/250] hello-world / sonnet_minimal_none_none_base #0 → pass (12.3s)
-[2/250] hello-world / sonnet_minimal_none_none_base #1 → pass (11.8s)
-[3/250] hello-world / sonnet_minimal_none_none_base #2 → fail (15.1s, task)
+  [PASS] hello-world / sonnet_minimal_none_none_base #0
+  [PASS] hello-world / sonnet_minimal_none_none_base #1
+  [TASK] hello-world / sonnet_minimal_none_none_base #2
 ```
 
-The failure class (if any) is shown in parentheses.
+The status label reflects the failure class (e.g., `PASS`, `TASK`, `PROVIDER`, `TIMEOUT`).
+
+With `-v`/`--verbose`, each line includes a progress counter, timing, and per-trial stats:
+
+```
+  [1/250] [PASS] hello-world / sonnet_minimal_none_none_base #0  (12.3s | 3 turns | 2 tools | 2.1k tok)  [1P/0F]
+  [2/250] [PASS] hello-world / sonnet_minimal_none_none_base #1  (11.8s | 3 turns | 2 tools | 1.9k tok)  [2P/0F]
+  [3/250] [TASK] hello-world / sonnet_minimal_none_none_base #2  (15.1s | 5 turns | 4 tools | 3.2k tok)  [2P/1F]
+```
+
+Verbose mode also prints a per-event timeline (LLM calls, tool calls, compactions) below each trial.
 
 ## Combining flags
 

@@ -24,27 +24,35 @@ Before looking at aggregates, you might want to examine individual trials:
 uv run calibra show results/model-shootout/hello-world/sonnet_minimal_none_none_base_0.json
 ```
 
-This prints a formatted table using Rich:
+This prints header info followed by two Rich tables:
 
 ```
-┌────────────────────────────────────┐
-│ Task:     hello-world              │
-│ Variant:  sonnet_minimal_none_none │
-│ Outcome:  success                  │
-│ Verified: true                     │
-│ Time:     12.3s                    │
-├──────────────┬─────────────────────┤
-│ Turns        │ 3                   │
-│ LLM Calls    │ 3                   │
-│ Tool Calls   │ 2 (0 failed)        │
-│ LLM Time     │ 8.1s                │
-│ Tool Time    │ 2.4s                │
-│ Compactions  │ 0                   │
-├──────────────┴─────────────────────┤
-│ Tool Usage                         │
-│   write_file: 1 ok, 0 fail         │
-│   run_command: 1 ok, 0 fail        │
-└────────────────────────────────────┘
+Trial Report: sonnet_minimal_none_none_base_0.json
+  Task: hello-world
+  Variant: sonnet_minimal_none_none_base
+  Outcome: success
+  Verified: true
+  Wall time: 12.3s
+
+       Stats
+┌──────────────┬───────┐
+│ Metric       │ Value │
+├──────────────┼───────┤
+│ Turns        │     3 │
+│ LLM calls    │     3 │
+│ Tool calls   │     2 │
+│ Tool failures│     0 │
+│ LLM time     │  8.1s │
+│ Tool time    │  2.4s │
+│ Compactions  │     0 │
+└──────────────┴───────┘
+     Tool Usage
+┌─────────────┬───────────┬────────┐
+│ Tool        │ Succeeded │ Failed │
+├─────────────┼───────────┼────────┤
+│ run_command │         1 │      0 │
+│ write_file  │         1 │      0 │
+└─────────────┴───────────┴────────┘
 ```
 
 ## Metrics collected
@@ -115,7 +123,7 @@ The Pareto front identifies variants that are not dominated by any other variant
 
 ## Instability warnings
 
-Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 0.5 on turns, LLM time, or token usage, which indicates inconsistent behavior. Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing `repeat` in your config.
+Calibra flags variants with high variance that may need more repeats. A variant gets a warning if its coefficient of variation (std/mean) exceeds 1.0 on turns, LLM time, or token usage, which indicates inconsistent behavior. Variants with fewer than 3 trials also get a warning since the data is insufficient for reliable statistics. These warnings appear in the Markdown report and suggest increasing `repeat` in your config.
 
 ## Weighted pass rate
 
@@ -146,8 +154,8 @@ The full machine-readable output:
       "wall_time_s": {"mean": 14.5, ...},
       "prompt_tokens_est": {"mean": 2100.0, ...},
       "review_rounds": {"mean": 1.5, "median": 1.0, "std": 0.8, "...": "..."},
-      "score_per_1k_tokens": 0.413,
-      "pass_rate_per_minute": 3.585
+      "score_per_1k_tokens": 0.4127,
+      "pass_rate_per_minute": 3.5852
     }
   ],
   "trials": [
@@ -167,7 +175,7 @@ The full machine-readable output:
 
 ### summary.md
 
-A Markdown report with variant rankings (sorted by rank), Pareto-efficient variants highlighted, instability warnings, and per-task pass rates.
+A Markdown report with variant rankings (sorted by rank), Pareto-efficient variants highlighted, and instability warnings.
 
 ### summary.csv
 
@@ -181,4 +189,4 @@ To compare two campaign runs (for example, before and after a change):
 uv run calibra compare results/run-a results/run-b
 ```
 
-This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size with magnitude classification (negligible, small, medium, large), and a token usage comparison. See [Advanced Topics](advanced.md#comparing-campaigns) for details.
+This finds variants common to both campaigns and computes the pass rate delta (run_b minus run_a), Cliff's delta effect size on token usage with magnitude classification (negligible, small, medium, large), and mean token counts per campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial. The output is written to `comparison.md` in the output directory. See [Advanced Topics](advanced.md#comparing-campaigns) for details.

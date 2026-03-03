@@ -58,7 +58,7 @@ When a full matrix has too many variants, sampling reduces the set without manua
 
 ### Full mode (default)
 
-Runs every variant. If `max_variants` is set, it caps the list at the first N after alphabetical sort:
+Runs every variant. If `max_variants` is set, it caps the list at the first N in Cartesian product order (determined by the order of entries in the config):
 
 ```toml
 [sampling]
@@ -78,7 +78,7 @@ max_variants = 20
 
 ### Ablation mode
 
-Tests one dimension at a time. It starts with a baseline (the first variant alphabetically), then includes only variants that differ from the baseline in exactly one dimension:
+Tests one dimension at a time. It starts with a baseline (the first variant in Cartesian product order), then includes only variants that differ from the baseline in exactly one dimension:
 
 ```toml
 [sampling]
@@ -121,7 +121,7 @@ Create a `prices.toml` file in the same directory as your campaign config:
 "openrouter/openai/gpt-5.3-codex" = 1.25
 ```
 
-Keys are `"provider/model"` strings matching your matrix model entries. Values are cost per 1,000 tokens. When `require_price_coverage = true`, validation fails if any model in the matrix is missing from prices.toml.
+Keys are `"provider/model"` strings matching your matrix model entries. Values are cost per 1,000 estimated prompt tokens. When `require_price_coverage = true`, validation fails if any model in the matrix is missing from prices.toml.
 
 ### What happens when budget is exceeded
 
@@ -147,7 +147,7 @@ The first matching class wins. If nothing matches, the trial is considered succe
 
 ### CLI mode failure classification
 
-When a reviewer is configured, trials run via the `swival` CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as `timeout`. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from `tool_calls_failed > 0`. However, if the report says `task` but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to `provider`. When no report is available, stderr pattern matching is the sole classification input. Since `--quiet` is always passed, stderr may be empty in some failure cases, resulting in a `task` classification as a fallback.
+When a reviewer is configured, trials run via the `swival` CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as `timeout`. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from `tool_calls_failed > 0`. However, if the report says `task` but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to `provider`. When no report is available, stderr pattern matching is the sole classification input. When `--quiet` is passed (the default unless verbose mode is active), stderr may be empty in some failure cases, resulting in a `task` classification as a fallback.
 
 ### Retry behavior
 
@@ -182,7 +182,7 @@ uv run calibra compare results/before results/after
 
 ### What gets compared
 
-Calibra finds variants present in both campaigns and computes the pass rate delta (`after - before`, where positive means improvement), Cliff's delta (a non-parametric effect size measure with magnitudes: negligible for |d| < 0.147, small for < 0.33, medium for < 0.474, and large for >= 0.474), and mean token usage in each campaign.
+Calibra finds variants present in both campaigns and computes the pass rate delta (`after - before`, where positive means improvement), Cliff's delta on token usage (a non-parametric effect size measure with magnitudes: negligible for |d| < 0.147, small for < 0.33, medium for < 0.474, and large for >= 0.474), and mean token usage in each campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial.
 
 ### Use cases
 
@@ -205,7 +205,7 @@ B: after
 
 ## Config hashing and reproducibility
 
-Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using `--resume`, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content, so cosmetic changes (whitespace, comments) don't affect it, but any semantic change does.
+Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using `--resume`, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content (with `name` and `description` excluded), so cosmetic changes (whitespace, comments) and name/description edits don't affect it, but any other semantic change does.
 
 ## Working with large matrices
 

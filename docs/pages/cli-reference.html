@@ -74,7 +74,7 @@
 <hr />
 <h2 id="calibra-run">calibra run</h2>
 <p>Execute a campaign.</p>
-<pre><code>calibra run &lt;config&gt; [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs]
+<pre><code>calibra run &lt;config&gt; [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs] [-v]
 </code></pre>
 <p>The <code>config</code> argument is a path to a campaign TOML file.</p>
 <table>
@@ -115,6 +115,11 @@
 <td><code>--keep-workdirs</code></td>
 <td>off</td>
 <td>Preserve temporary workspace directories</td>
+</tr>
+<tr>
+<td><code>-v</code>, <code>--verbose</code></td>
+<td>off</td>
+<td>Show detailed trial output (counters, timing, event timeline)</td>
 </tr>
 </tbody>
 </table>
@@ -164,7 +169,7 @@ uv run calibra analyze results/model-shootout --output reports/
 <p>Pretty-print a single trial report.</p>
 <pre><code>calibra show &lt;report.json&gt;
 </code></pre>
-<p>The argument is a path to a trial JSON file. Output includes the task name, variant label, outcome, verification status, wall time, turns, LLM calls, tool calls (succeeded/failed), LLM time, tool time, compactions, and a tool usage breakdown.</p>
+<p>The argument is a path to a trial JSON file. Output includes the task name, variant label, outcome, verification status, wall time, turns, LLM calls, total tool calls, tool failures, LLM time, tool time, compactions, and a per-tool usage breakdown.</p>
 <pre><code class="language-bash">uv run calibra show results/model-shootout/hello-world/sonnet_default_none_none_base_0.json
 </code></pre>
 <hr />
@@ -193,7 +198,7 @@ uv run calibra analyze results/model-shootout --output reports/
 </code></pre>
 <hr />
 <h2 id="calibra-web-serve">calibra web serve</h2>
-<p>Launch the interactive web dashboard. Requires the <code>[web]</code> optional dependencies (<code>uv sync --extra web</code>).</p>
+<p>Launch the interactive web dashboard.</p>
 <pre><code>calibra web serve &lt;results_dir&gt; [--port N] [--host ADDR] [--open]
 </code></pre>
 <p>The <code>results_dir</code> argument is the directory containing campaign result folders.</p>
@@ -228,7 +233,7 @@ uv run calibra web serve results/ --host 0.0.0.0 --port 9000
 </code></pre>
 <hr />
 <h2 id="calibra-web-build">calibra web build</h2>
-<p>Export a static HTML dashboard. Requires the <code>[web]</code> optional dependencies.</p>
+<p>Export a static HTML dashboard.</p>
 <pre><code>calibra web build &lt;results_dir&gt; [--output DIR]
 </code></pre>
 <table>
@@ -242,7 +247,7 @@ uv run calibra web serve results/ --host 0.0.0.0 --port 9000
 <tbody>
 <tr>
 <td><code>--output DIR</code></td>
-<td><code>dist/</code></td>
+<td><code>&lt;results_dir&gt;/web</code></td>
 <td>Output directory for static HTML</td>
 </tr>
 </tbody>

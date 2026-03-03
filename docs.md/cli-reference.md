@@ -33,19 +33,20 @@ Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 Execute a campaign.
 
 ```
-calibra run <config> [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs]
+calibra run <config> [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs] [-v]
 ```
 
 The `config` argument is a path to a campaign TOML file.
 
-| Option            | Default   | Description                                          |
-| ----------------- | --------- | ---------------------------------------------------- |
-| `--workers N`     | `1`       | Number of parallel worker threads                    |
-| `--dry-run`       | off       | Print trial plan without executing                   |
-| `--filter EXPR`   | none      | Filter variants (e.g., `"model=sonnet,skills=full"`) |
-| `--resume`        | off       | Skip trials with existing valid results              |
-| `--output DIR`    | `results` | Output directory for trial reports                   |
-| `--keep-workdirs` | off       | Preserve temporary workspace directories             |
+| Option            | Default   | Description                                                   |
+| ----------------- | --------- | ------------------------------------------------------------- |
+| `--workers N`     | `1`       | Number of parallel worker threads                             |
+| `--dry-run`       | off       | Print trial plan without executing                            |
+| `--filter EXPR`   | none      | Filter variants (e.g., `"model=sonnet,skills=full"`)          |
+| `--resume`        | off       | Skip trials with existing valid results                       |
+| `--output DIR`    | `results` | Output directory for trial reports                            |
+| `--keep-workdirs` | off       | Preserve temporary workspace directories                      |
+| `-v`, `--verbose` | off       | Show detailed trial output (counters, timing, event timeline) |
 
 ```bash
 # Basic run
@@ -97,7 +98,7 @@ Pretty-print a single trial report.
 calibra show <report.json>
 ```
 
-The argument is a path to a trial JSON file. Output includes the task name, variant label, outcome, verification status, wall time, turns, LLM calls, tool calls (succeeded/failed), LLM time, tool time, compactions, and a tool usage breakdown.
+The argument is a path to a trial JSON file. Output includes the task name, variant label, outcome, verification status, wall time, turns, LLM calls, total tool calls, tool failures, LLM time, tool time, compactions, and a per-tool usage breakdown.
 
 ```bash
 uv run calibra show results/model-shootout/hello-world/sonnet_default_none_none_base_0.json
@@ -127,7 +128,7 @@ uv run calibra compare results/run-v1 results/run-v2
 
 ## calibra web serve
 
-Launch the interactive web dashboard. Requires the `[web]` optional dependencies (`uv sync --extra web`).
+Launch the interactive web dashboard.
 
 ```
 calibra web serve <results_dir> [--port N] [--host ADDR] [--open]
@@ -150,15 +151,15 @@ uv run calibra web serve results/ --host 0.0.0.0 --port 9000
 
 ## calibra web build
 
-Export a static HTML dashboard. Requires the `[web]` optional dependencies.
+Export a static HTML dashboard.
 
 ```
 calibra web build <results_dir> [--output DIR]
 ```
 
-| Option         | Default | Description                      |
-| -------------- | ------- | -------------------------------- |
-| `--output DIR` | `dist/` | Output directory for static HTML |
+| Option         | Default             | Description                      |
+| -------------- | ------------------- | -------------------------------- |
+| `--output DIR` | `<results_dir>/web` | Output directory for static HTML |
 
 ```bash
 uv run calibra web build results/ --output docs.md/dashboard/

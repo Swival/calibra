@@ -93,7 +93,7 @@ exclude = { mcp = &quot;none&quot; }
 <h2 id="sampling-modes">Sampling modes</h2>
 <p>When a full matrix has too many variants, sampling reduces the set without manually picking.</p>
 <h3 id="full-mode-default">Full mode (default)</h3>
-<p>Runs every variant. If <code>max_variants</code> is set, it caps the list at the first N after alphabetical sort:</p>
+<p>Runs every variant. If <code>max_variants</code> is set, it caps the list at the first N in Cartesian product order (determined by the order of entries in the config):</p>
 <pre><code class="language-toml">[sampling]
 mode = &quot;full&quot;
 max_variants = 50  # 0 = unlimited
@@ -105,7 +105,7 @@ mode = &quot;random&quot;
 max_variants = 20
 </code></pre>
 <h3 id="ablation-mode">Ablation mode</h3>
-<p>Tests one dimension at a time. It starts with a baseline (the first variant alphabetically), then includes only variants that differ from the baseline in exactly one dimension:</p>
+<p>Tests one dimension at a time. It starts with a baseline (the first variant in Cartesian product order), then includes only variants that differ from the baseline in exactly one dimension:</p>
 <pre><code class="language-toml">[sampling]
 mode = &quot;ablation&quot;
 </code></pre>
@@ -130,7 +130,7 @@ require_price_coverage = true
 &quot;anthropic/claude-haiku-4.5&quot; = 0.25
 &quot;openrouter/openai/gpt-5.3-codex&quot; = 1.25
 </code></pre>
-<p>Keys are <code>"provider/model"</code> strings matching your matrix model entries. Values are cost per 1,000 tokens. When <code>require_price_coverage = true</code>, validation fails if any model in the matrix is missing from prices.toml.</p>
+<p>Keys are <code>"provider/model"</code> strings matching your matrix model entries. Values are cost per 1,000 estimated prompt tokens. When <code>require_price_coverage = true</code>, validation fails if any model in the matrix is missing from prices.toml.</p>
 <h3 id="what-happens-when-budget-is-exceeded">What happens when budget is exceeded</h3>
 <p>When a limit is hit, the current trial finishes, all pending trials in the thread pool are cancelled, and the budget tracker records which limit was hit and how much was used. Already-completed trial results are preserved. You can resume after adjusting the budget:</p>
 <pre><code class="language-bash">uv run calibra run experiments/config.toml --resume
@@ -181,7 +181,7 @@ require_price_coverage = true
 </table>
 <p>The first matching class wins. If nothing matches, the trial is considered successful.</p>
 <h3 id="cli-mode-failure-classification">CLI mode failure classification</h3>
-<p>When a reviewer is configured, trials run via the <code>swival</code> CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as <code>timeout</code>. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from <code>tool_calls_failed &gt; 0</code>. However, if the report says <code>task</code> but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to <code>provider</code>. When no report is available, stderr pattern matching is the sole classification input. Since <code>--quiet</code> is always passed, stderr may be empty in some failure cases, resulting in a <code>task</code> classification as a fallback.</p>
+<p>When a reviewer is configured, trials run via the <code>swival</code> CLI subprocess. Failure classification in this mode works differently: if the subprocess times out, it's classified as <code>timeout</code>. If exit code is 0, report-based classification is used (same as Session mode). For non-zero exit codes with a report, the report drives classification first - this preserves tool-failure detection from <code>tool_calls_failed &gt; 0</code>. However, if the report says <code>task</code> but stderr contains provider patterns (rate limit, 429, etc.), the stderr signal overrides to <code>provider</code>. When no report is available, stderr pattern matching is the sole classification input. When <code>--quiet</code> is passed (the default unless verbose mode is active), stderr may be empty in some failure cases, resulting in a <code>task</code> classification as a fallback.</p>
 <h3 id="retry-behavior">Retry behavior</h3>
 <p>Each failure class has its own retry count:</p>
 <pre><code class="language-toml">[retry]
@@ -201,7 +201,7 @@ task = 0       # don't retry wrong answers
 <pre><code class="language-bash">uv run calibra compare results/before results/after
 </code></pre>
 <h3 id="what-gets-compared">What gets compared</h3>
-<p>Calibra finds variants present in both campaigns and computes the pass rate delta (<code>after - before</code>, where positive means improvement), Cliff's delta (a non-parametric effect size measure with magnitudes: negligible for |d| &lt; 0.147, small for &lt; 0.33, medium for &lt; 0.474, and large for &gt;= 0.474), and mean token usage in each campaign.</p>
+<p>Calibra finds variants present in both campaigns and computes the pass rate delta (<code>after - before</code>, where positive means improvement), Cliff's delta on token usage (a non-parametric effect size measure with magnitudes: negligible for |d| &lt; 0.147, small for &lt; 0.33, medium for &lt; 0.474, and large for &gt;= 0.474), and mean token usage in each campaign. Cliff's delta is only computed when both campaigns have the same number of trials per variant and more than one trial.</p>
 <h3 id="use-cases">Use cases</h3>
 <p>Comparison is useful for model upgrades (run the same tasks with a new model version and compare pass rates), instruction tuning (test different AGENTS.md files and see which improves results), skill evaluation (add a skill set and measure its impact), and regression testing (re-run after changing the agent framework to verify no regressions).</p>
 <h3 id="comparison-output">Comparison output</h3>
@@ -216,7 +216,7 @@ B: after
 | sonnet_default_none_none_base | 70.0%  | 85.0%  | +15.0% | 0.42 (medium) | 2100     | 1850     |
 </code></pre>
 <h2 id="config-hashing-and-reproducibility">Config hashing and reproducibility</h2>
-<p>Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using <code>--resume</code>, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content, so cosmetic changes (whitespace, comments) don't affect it, but any semantic change does.</p>
+<p>Calibra computes a SHA-256 hash of the campaign configuration and embeds it in every trial report. This serves two purposes. First, when using <code>--resume</code>, only trials with matching config hashes are considered complete, so any config change invalidates previous results. Second, it provides an audit trail: you can verify that a set of results came from a specific config, even if the TOML file has since been modified. The hash is computed from the normalized config content (with <code>name</code> and <code>description</code> excluded), so cosmetic changes (whitespace, comments) and name/description edits don't affect it, but any other semantic change does.</p>
 <h2 id="working-with-large-matrices">Working with large matrices</h2>
 <p>A matrix of 5 models × 3 instructions × 3 skills × 2 MCP × 2 environments gives you 180 variants. With 5 repeats and 10 tasks, that's 9,000 trials. Here are some strategies for managing scale.</p>
 <p>Start with ablation mode to identify which dimensions actually matter:</p>

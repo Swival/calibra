@@ -6,7 +6,7 @@ Tasks are the unit of work in a Calibra campaign. Each task gives the agent a pr
 
 ```
 tasks/my-task/
-  task.md       # Prompt sent to the agent (required)
+  task.md       # Prompt sent to the agent (required, must be non-empty)
   env/          # Initial workspace files (required, can be empty)
   verify.sh     # Verification script (optional)
   meta.toml     # Task metadata (optional)
@@ -14,7 +14,7 @@ tasks/my-task/
 
 ## task.md: the prompt
 
-This is the exact text sent to the coding agent. Write it the way you'd describe a task to a developer: clear, specific, and self-contained.
+This is the text sent to the coding agent (leading and trailing whitespace is stripped). Write it the way you'd describe a task to a developer: clear, specific, and self-contained.
 
 A simple generation task might look like:
 
@@ -83,7 +83,7 @@ The entire `env/` tree is copied into a temporary directory for each trial, so t
 
 ## verify.sh: the verifier
 
-An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
+An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout; if the timeout expires or the script can't be executed (e.g., missing interpreter), it counts as a fail. The script's stdout and stderr are captured but not stored in the report. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
 
 When a campaign has a `[reviewer]` configured, `verify.sh` is skipped - the reviewer determines pass/fail instead. Tasks can include both `verify.sh` and be used with reviewer campaigns; the campaign config controls which verification method is used.
 
@@ -152,11 +152,11 @@ estimated_turns = 3
 skills = ["file-creation", "stdout"]
 ```
 
-The metadata is available in trial reports and can be useful for post-hoc analysis.
+The metadata is loaded during task discovery but is not currently written to trial reports.
 
 ## Task discovery
 
-Calibra discovers tasks by scanning the `tasks_dir` specified in your campaign config. The scan is alphabetical, and every subdirectory must be a valid task. If any task fails validation, the entire campaign is rejected.
+Calibra discovers tasks by scanning the `tasks_dir` specified in your campaign config. The scan is alphabetical; files (non-directories) are silently skipped, and every subdirectory must be a valid task. If any task fails validation or no tasks are found, the entire campaign is rejected.
 
 A task is valid when `task.md` exists and is non-empty, `env/` exists and is a directory, and (if present) `verify.sh` is executable. You can organize tasks into subdirectories if needed, but the scanner only looks one level deep (direct children of `tasks_dir`).
 

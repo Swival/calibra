@@ -1,6 +1,6 @@
 # Installation
 
-Calibra requires Python 3.13 or later, [uv](https://docs.astral.sh/uv/) as its package manager, and [Swival](https://github.com/anthropics/swival) as the underlying agent framework.
+Calibra requires Python 3.13 or later, [uv](https://docs.astral.sh/uv/) as its package manager, and [Swival](https://swival.dev) as the underlying agent framework.
 
 ## Install Calibra
 
@@ -12,26 +12,14 @@ cd calibra
 uv sync
 ```
 
-This installs the core package with two dependencies: `swival` (the agent framework) and `rich` (for terminal formatting).
+This installs the core package with its dependencies: `swival` (the agent framework), `rich` (for terminal formatting), `fastapi`, `uvicorn`, and `jinja2` (for the web dashboard).
 
 ## Optional extras
 
-Calibra ships with two optional dependency groups. For chart generation in reports, install `matplotlib`:
+For chart generation in reports, install `matplotlib`:
 
 ```bash
 uv sync --extra charts
-```
-
-For the interactive web dashboard (FastAPI, Uvicorn, Jinja2):
-
-```bash
-uv sync --extra web
-```
-
-Or grab everything at once:
-
-```bash
-uv sync --extra charts --extra web
 ```
 
 ## Development dependencies
@@ -56,6 +44,7 @@ You should see a list of subcommands: `validate`, `run`, `analyze`, `show`, `com
 
 ```
 calibra/
+  __init__.py     # Package init
   cli.py          # CLI entrypoint
   config.py       # TOML config parsing
   matrix.py       # Variant expansion
@@ -68,8 +57,9 @@ calibra/
   report.py       # Report generation
   compare.py      # Campaign comparison
   show.py         # Trial pretty-printing
+  verbose.py      # Verbose output formatting
   utils.py        # Shared utilities
-  web/            # Web dashboard (optional)
+  web/            # Web dashboard
 experiments/      # Campaign config files
 tasks/            # Task definitions
 results/          # Trial output (generated)

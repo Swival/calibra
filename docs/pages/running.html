@@ -70,7 +70,7 @@
 <p>To see the full trial plan without executing anything:</p>
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml --dry-run
 </code></pre>
-<p>This expands the matrix, applies constraints and sampling, then prints every trial that would run. It's useful for verifying that filters and constraints produce the expected set of trials.</p>
+<p>This expands the matrix, applies constraints and sampling, then prints every variant label along with summary counts (tasks, repeats, total trials). It's useful for verifying that filters and constraints produce the expected set of variants.</p>
 <h2 id="running-a-campaign">Running a campaign</h2>
 <p>Basic execution:</p>
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml
@@ -123,19 +123,25 @@ uv run calibra run experiments/model-shootout.toml --filter &quot;skills=full&qu
 <h2 id="trial-execution-flow">Trial execution flow</h2>
 <p>For each trial, Calibra sets up the workspace as described above, then computes a deterministic trial seed from <code>SHA256(seed:task:variant:repeat)</code>.</p>
 <h3 id="session-mode-default">Session mode (default)</h3>
-<p>When no <code>[reviewer]</code> is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any <a href="configuration.html#session-options">session options</a> (campaign defaults deep-merged with per-model overrides). When <code>allowed_commands</code> is set, <code>yolo</code> is automatically flipped to <code>false</code> so the allowlist takes effect. Calibra runs the agent within the <code>max_turns</code> and <code>timeout_s</code> limits, then runs <code>verify.sh</code> in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see <a href="configuration.html#retry-section">retry config</a>). Finally, the JSON report is written.</p>
+<p>When no <code>[reviewer]</code> is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any <a href="configuration.html#session-options">session options</a> (campaign defaults deep-merged with per-model overrides). When <code>allowed_commands</code> is set without explicitly setting <code>yolo</code>, it defaults to <code>false</code> so the allowlist takes effect. Calibra runs the agent within the <code>max_turns</code> and <code>timeout_s</code> limits, then runs <code>verify.sh</code> in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see <a href="configuration.html#retry-section">retry config</a>). Finally, the JSON report is written.</p>
 <h3 id="reviewer-mode">Reviewer mode</h3>
 <p>When a <code>[reviewer]</code> is configured, Calibra runs the <code>swival</code> CLI as a subprocess instead of using the Session API. This is necessary because the reviewer feature is CLI-only in Swival, and <code>Session.ask()</code> returns <code>report=None</code> so retry round data would be invisible to metrics and budget tracking.</p>
-<p>The CLI invocation includes <code>--report</code> (to get the full JSON report with timeline events), <code>--reviewer</code> (the reviewer command), <code>--max-review-rounds</code>, <code>--quiet</code>, <code>--no-history</code>, and all session options mapped to their CLI flag equivalents. Swival handles the full reviewer loop internally - initial run plus up to <code>max_rounds</code> retry rounds.</p>
+<p>The CLI invocation includes <code>--report</code> (to get the full JSON report with timeline events), <code>--reviewer</code> (the reviewer command), <code>--max-review-rounds</code>, <code>--no-history</code>, and all session options mapped to their CLI flag equivalents. <code>--quiet</code> is included unless <code>calibra run</code> was invoked with <code>--verbose</code>. Swival handles the full reviewer loop internally - initial run plus up to <code>max_rounds</code> retry rounds.</p>
 <p>To prevent user or project config from leaking into trials, Calibra sets <code>XDG_CONFIG_HOME</code> to an empty temp directory (preventing <code>~/.config/swival/config.toml</code> from loading), deletes any <code>swival.toml</code> that may have been copied from the task's <code>env/</code> or overlay, and passes <code>--no-mcp</code> unless the variant has explicit MCP config.</p>
 <p>After the subprocess completes, Calibra reads the report JSON, determines <code>verified</code> from the last review event in the timeline (exit 0 = true, exit 1 = false, exit 2+ = null), and classifies failures using the report data first with a stderr fallback. <code>verify.sh</code> is skipped in reviewer mode.</p>
 <h2 id="monitoring-progress">Monitoring progress</h2>
-<p>Calibra logs progress to stderr as trials complete:</p>
-<pre><code>[1/250] hello-world / sonnet_minimal_none_none_base #0 → pass (12.3s)
-[2/250] hello-world / sonnet_minimal_none_none_base #1 → pass (11.8s)
-[3/250] hello-world / sonnet_minimal_none_none_base #2 → fail (15.1s, task)
+<p>Calibra prints progress to stdout as trials complete. By default, a compact format is used:</p>
+<pre><code>  [PASS] hello-world / sonnet_minimal_none_none_base #0
+  [PASS] hello-world / sonnet_minimal_none_none_base #1
+  [TASK] hello-world / sonnet_minimal_none_none_base #2
 </code></pre>
-<p>The failure class (if any) is shown in parentheses.</p>
+<p>The status label reflects the failure class (e.g., <code>PASS</code>, <code>TASK</code>, <code>PROVIDER</code>, <code>TIMEOUT</code>).</p>
+<p>With <code>-v</code>/<code>--verbose</code>, each line includes a progress counter, timing, and per-trial stats:</p>
+<pre><code>  [1/250] [PASS] hello-world / sonnet_minimal_none_none_base #0  (12.3s | 3 turns | 2 tools | 2.1k tok)  [1P/0F]
+  [2/250] [PASS] hello-world / sonnet_minimal_none_none_base #1  (11.8s | 3 turns | 2 tools | 1.9k tok)  [2P/0F]
+  [3/250] [TASK] hello-world / sonnet_minimal_none_none_base #2  (15.1s | 5 turns | 4 tools | 3.2k tok)  [2P/1F]
+</code></pre>
+<p>Verbose mode also prints a per-event timeline (LLM calls, tool calls, compactions) below each trial.</p>
 <h2 id="combining-flags">Combining flags</h2>
 <p>Flags can be combined freely:</p>
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml \

@@ -106,7 +106,7 @@ agents_md = &quot;AGENTS.md&quot;
 <p>See exactly what would execute without running anything:</p>
 <pre><code class="language-bash">uv run calibra run experiments/my-first-campaign.toml --dry-run
 </code></pre>
-<p>This prints each trial that would be executed: task name, variant label, and repeat index.</p>
+<p>This prints each variant label along with summary counts (tasks, repeats, total trials).</p>
 <h2 id="5-run-the-campaign">5. Run the campaign</h2>
 <pre><code class="language-bash">uv run calibra run experiments/my-first-campaign.toml --workers 2
 </code></pre>
