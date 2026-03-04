@@ -238,7 +238,7 @@ when = { model = "haiku" }
 exclude = { skills = "full" }
 ```
 
-Run subsets to iterate quickly using `--filter`:
+Run subsets to iterate quickly using `--filter` and `--task`:
 
 ```bash
 # Test one model first
@@ -246,6 +246,9 @@ uv run calibra run config.toml --filter "model=sonnet" --workers 4
 
 # Then add another
 uv run calibra run config.toml --filter "model=haiku" --resume
+
+# Or focus on a single task
+uv run calibra run config.toml --task hello-world --workers 4
 ```
 
 Put a safety net on cost:

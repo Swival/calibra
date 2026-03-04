@@ -33,7 +33,7 @@ Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 Execute a campaign.
 
 ```
-calibra run <config> [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs] [-v]
+calibra run <config> [--workers N] [--dry-run] [--filter EXPR] [--task NAME] [--resume] [--output DIR] [--keep-workdirs] [-v]
 ```
 
 The `config` argument is a path to a campaign TOML file.
@@ -43,6 +43,7 @@ The `config` argument is a path to a campaign TOML file.
 | `--workers N`     | `1`       | Number of parallel worker threads                             |
 | `--dry-run`       | off       | Print trial plan without executing                            |
 | `--filter EXPR`   | none      | Filter variants (e.g., `"model=sonnet,skills=full"`)          |
+| `--task NAME`     | all       | Run only specified task(s); repeatable                        |
 | `--resume`        | off       | Skip trials with existing valid results                       |
 | `--output DIR`    | `results` | Output directory for trial reports                            |
 | `--keep-workdirs` | off       | Preserve temporary workspace directories                      |
@@ -54,6 +55,12 @@ uv run calibra run experiments/config.toml
 
 # Parallel with filtering
 uv run calibra run experiments/config.toml --workers 4 --filter "model=sonnet"
+
+# Run a single task
+uv run calibra run experiments/config.toml --task hello-world
+
+# Run two specific tasks
+uv run calibra run experiments/config.toml --task hello-world --task fix-typo
 
 # Resume an interrupted run
 uv run calibra run experiments/config.toml --resume --workers 4

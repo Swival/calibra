@@ -74,7 +74,7 @@
 <hr />
 <h2 id="calibra-run">calibra run</h2>
 <p>Execute a campaign.</p>
-<pre><code>calibra run &lt;config&gt; [--workers N] [--dry-run] [--filter EXPR] [--resume] [--output DIR] [--keep-workdirs] [-v]
+<pre><code>calibra run &lt;config&gt; [--workers N] [--dry-run] [--filter EXPR] [--task NAME] [--resume] [--output DIR] [--keep-workdirs] [-v]
 </code></pre>
 <p>The <code>config</code> argument is a path to a campaign TOML file.</p>
 <table>
@@ -100,6 +100,11 @@
 <td><code>--filter EXPR</code></td>
 <td>none</td>
 <td>Filter variants (e.g., <code>"model=sonnet,skills=full"</code>)</td>
+</tr>
+<tr>
+<td><code>--task NAME</code></td>
+<td>all</td>
+<td>Run only specified task(s); repeatable</td>
 </tr>
 <tr>
 <td><code>--resume</code></td>
@@ -128,6 +133,12 @@ uv run calibra run experiments/config.toml
 
 # Parallel with filtering
 uv run calibra run experiments/config.toml --workers 4 --filter &quot;model=sonnet&quot;
+
+# Run a single task
+uv run calibra run experiments/config.toml --task hello-world
+
+# Run two specific tasks
+uv run calibra run experiments/config.toml --task hello-world --task fix-typo
 
 # Resume an interrupted run
 uv run calibra run experiments/config.toml --resume --workers 4

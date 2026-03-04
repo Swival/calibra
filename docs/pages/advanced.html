@@ -234,12 +234,15 @@ mode = &quot;ablation&quot;
 when = { model = &quot;haiku&quot; }
 exclude = { skills = &quot;full&quot; }
 </code></pre>
-<p>Run subsets to iterate quickly using <code>--filter</code>:</p>
+<p>Run subsets to iterate quickly using <code>--filter</code> and <code>--task</code>:</p>
 <pre><code class="language-bash"># Test one model first
 uv run calibra run config.toml --filter &quot;model=sonnet&quot; --workers 4
 
 # Then add another
 uv run calibra run config.toml --filter &quot;model=haiku&quot; --resume
+
+# Or focus on a single task
+uv run calibra run config.toml --task hello-world --workers 4
 </code></pre>
 <p>Put a safety net on cost:</p>
 <pre><code class="language-toml">[budget]

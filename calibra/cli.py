@@ -49,6 +49,16 @@ def cmd_run(args):
 
     tasks = discover_tasks(campaign.tasks_dir)
 
+    if args.task:
+        known = {t.name for t in tasks}
+        unknown = set(args.task) - known
+        if unknown:
+            print(f"Error: unknown task(s): {', '.join(sorted(unknown))}", file=sys.stderr)
+            print(f"Available: {', '.join(sorted(known))}", file=sys.stderr)
+            sys.exit(1)
+        keep = set(args.task)
+        tasks = [t for t in tasks if t.name in keep]
+
     if args.dry_run:
         print(f"Campaign: {campaign.name}")
         print(f"Config hash: {campaign.config_hash}")
@@ -186,6 +196,7 @@ def main(argv=None):
     p_run.add_argument("--workers", type=int, default=1, help="Number of parallel workers")
     p_run.add_argument("--dry-run", action="store_true", help="Print trial plan without executing")
     p_run.add_argument("--filter", help="Filter variants (e.g. model=sonnet,skills=full)")
+    p_run.add_argument("--task", action="append", help="Run only specified task(s) (repeatable)")
     p_run.add_argument("--resume", action="store_true", help="Skip completed trials")
     p_run.add_argument("--output", default="results", help="Output directory")
     p_run.add_argument(

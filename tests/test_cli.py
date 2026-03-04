@@ -73,3 +73,37 @@ def test_filter_dry_run(tmp_path, capsys):
     assert "Variants: 1" in out
     assert "model-a_default_none_none_base" in out
     assert "model-b" not in out
+
+
+def _setup_multi_task(tmp_path):
+    for name in ("alpha", "beta", "gamma"):
+        td = tmp_path / "tasks" / name
+        td.mkdir(parents=True)
+        (td / "task.md").write_text(f"Do {name}.")
+        (td / "env").mkdir()
+    (tmp_path / "agents.md").write_text("You are a helpful assistant.")
+    config = tmp_path / "campaign.toml"
+    config.write_text(CAMPAIGN_TOML)
+    return config
+
+
+def test_task_filter_dry_run(tmp_path, capsys):
+    config = _setup_multi_task(tmp_path)
+    main(["run", str(config), "--dry-run", "--task", "alpha"])
+    out = capsys.readouterr().out
+    assert "Tasks: 1" in out
+    assert "Total trials: 2" in out
+
+
+def test_task_filter_multiple(tmp_path, capsys):
+    config = _setup_multi_task(tmp_path)
+    main(["run", str(config), "--dry-run", "--task", "alpha", "--task", "gamma"])
+    out = capsys.readouterr().out
+    assert "Tasks: 2" in out
+    assert "Total trials: 4" in out
+
+
+def test_task_filter_unknown(tmp_path):
+    config = _setup_multi_task(tmp_path)
+    with pytest.raises(SystemExit):
+        main(["run", str(config), "--dry-run", "--task", "nonexistent"])

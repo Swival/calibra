@@ -113,6 +113,18 @@ uv run calibra run experiments/model-shootout.toml --filter &quot;model=sonnet,a
 uv run calibra run experiments/model-shootout.toml --filter &quot;skills=full&quot;
 </code></pre>
 <p>The syntax is comma-separated <code>dimension=label</code> pairs, and all conditions must match (AND logic). Valid dimension names are <code>model</code>, <code>agent_instructions</code>, <code>skills</code>, <code>mcp</code>, and <code>environment</code>. Filtering is applied after constraints and sampling, so it further reduces an already-processed set of variants.</p>
+<h2 id="filtering-tasks">Filtering tasks</h2>
+<p>The <code>--task</code> flag lets you run a subset of tasks without modifying the config. It can be repeated to select multiple tasks:</p>
+<pre><code class="language-bash"># Run only the hello-world task
+uv run calibra run experiments/model-shootout.toml --task hello-world
+
+# Run two specific tasks
+uv run calibra run experiments/model-shootout.toml --task hello-world --task fix-typo
+</code></pre>
+<p>Task names correspond to directory names under <code>tasks_dir</code>. If you specify an unknown task name, Calibra prints the available tasks and exits.</p>
+<p><code>--task</code> and <code>--filter</code> can be combined to run specific tasks with specific variants:</p>
+<pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml --task hello-world --filter &quot;model=sonnet&quot;
+</code></pre>
 <h2 id="resuming-campaigns">Resuming campaigns</h2>
 <p>Long campaigns may be interrupted by network issues, budget limits, or manual cancellation. The <code>--resume</code> flag skips trials that already have valid results:</p>
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml --resume
@@ -149,6 +161,7 @@ This ordering matters: the overlay can override env files, and <code>AGENTS.md</
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml \
   --workers 4 \
   --filter &quot;model=sonnet&quot; \
+  --task hello-world \
   --resume \
   --keep-workdirs \
   --output results-v2

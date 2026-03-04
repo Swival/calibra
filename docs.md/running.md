@@ -95,6 +95,26 @@ uv run calibra run experiments/model-shootout.toml --filter "skills=full"
 
 The syntax is comma-separated `dimension=label` pairs, and all conditions must match (AND logic). Valid dimension names are `model`, `agent_instructions`, `skills`, `mcp`, and `environment`. Filtering is applied after constraints and sampling, so it further reduces an already-processed set of variants.
 
+## Filtering tasks
+
+The `--task` flag lets you run a subset of tasks without modifying the config. It can be repeated to select multiple tasks:
+
+```bash
+# Run only the hello-world task
+uv run calibra run experiments/model-shootout.toml --task hello-world
+
+# Run two specific tasks
+uv run calibra run experiments/model-shootout.toml --task hello-world --task fix-typo
+```
+
+Task names correspond to directory names under `tasks_dir`. If you specify an unknown task name, Calibra prints the available tasks and exits.
+
+`--task` and `--filter` can be combined to run specific tasks with specific variants:
+
+```bash
+uv run calibra run experiments/model-shootout.toml --task hello-world --filter "model=sonnet"
+```
+
 ## Resuming campaigns
 
 Long campaigns may be interrupted by network issues, budget limits, or manual cancellation. The `--resume` flag skips trials that already have valid results:
@@ -160,6 +180,7 @@ Flags can be combined freely:
 uv run calibra run experiments/model-shootout.toml \
   --workers 4 \
   --filter "model=sonnet" \
+  --task hello-world \
   --resume \
   --keep-workdirs \
   --output results-v2
