@@ -51,12 +51,12 @@ def cmd_run(args):
 
     if args.task:
         known = {t.name for t in tasks}
-        unknown = set(args.task) - known
+        keep = set(args.task)
+        unknown = keep - known
         if unknown:
             print(f"Error: unknown task(s): {', '.join(sorted(unknown))}", file=sys.stderr)
             print(f"Available: {', '.join(sorted(known))}", file=sys.stderr)
             sys.exit(1)
-        keep = set(args.task)
         tasks = [t for t in tasks if t.name in keep]
 
     if args.dry_run:
