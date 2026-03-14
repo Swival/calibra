@@ -163,7 +163,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'charts'" },
     { name = "rich" },
-    { name = "swival", specifier = ">=0.1.22" },
+    { name = "swival", specifier = ">=0.1.25" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["charts"]
@@ -1603,6 +1603,18 @@ wheels = [
 ]
 
 [[package]]
+name = "rank-bm25"
+version = "0.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/0a/f9579384aa017d8b4c15613f86954b92a95a93d641cc849182467cf0bb3b/rank_bm25-0.2.2.tar.gz", hash = "sha256:096ccef76f8188563419aaf384a02f0ea459503fdf77901378d4fd9d87e5e51d", size = 8347, upload-time = "2022-02-16T12:10:52.196Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/21/f691fb2613100a62b3fa91e9988c991e9ca5b89ea31c0d3152a3210344f9/rank_bm25-0.2.2-py3-none-any.whl", hash = "sha256:7bd4a95571adadfc271746fa146a4bcfd89c0cf731e49c3d1ad863290adbe8ae", size = 8584, upload-time = "2022-02-16T12:10:50.626Z" },
+]
+
+[[package]]
 name = "referencing"
 version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1860,19 +1872,23 @@ wheels = [
 
 [[package]]
 name = "swival"
-version = "0.1.22"
+version = "0.1.25"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "html-to-markdown" },
+    { name = "httpx" },
     { name = "litellm" },
     { name = "mcp" },
     { name = "prompt-toolkit" },
+    { name = "rank-bm25" },
     { name = "rich" },
+    { name = "starlette" },
     { name = "tiktoken" },
+    { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/07/1509248d88cf73cfe725c73a05eb01c9be7c2af88eb720b036d6e12e4d7b/swival-0.1.22.tar.gz", hash = "sha256:94f1e1ac82c96f4061eb1bb450447aaa1a2220f16d0cb70a4ea1b4d5b9b1b8af", size = 1471537, upload-time = "2026-03-12T13:48:31.956Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/ad/8d2af81054c957483c934be2bbab12cce51932d4c1eda536cbf09b17f6c5/swival-0.1.25.tar.gz", hash = "sha256:051de2c26a821c9b1bd8f786f0fd1b75f656a4a8b57367395a03eb26b3f48c11", size = 1896507, upload-time = "2026-03-14T13:08:20.754Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/8c/72a758fe5cee4b8d27aacd85c1a9188f6071889f39eaa1e5d04865bc79a2/swival-0.1.22-py3-none-any.whl", hash = "sha256:ae2446b1c224f18583969d8c338845ad1143bba606fa25557a159094a144931b", size = 113087, upload-time = "2026-03-12T13:48:33.214Z" },
+    { url = "https://files.pythonhosted.org/packages/38/27/df40e64b840f4822d5dfc0ce1aeece89e5f3500215edb909267db7406da7/swival-0.1.25-py3-none-any.whl", hash = "sha256:fa93b509c508fb48668530159e9b4e703638939a84d2d712d220926b8c329de0", size = 141890, upload-time = "2026-03-14T13:08:19.045Z" },
 ]
 
 [[package]]
