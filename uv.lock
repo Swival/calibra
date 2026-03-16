@@ -163,7 +163,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'charts'" },
     { name = "rich" },
-    { name = "swival", specifier = ">=0.1.26" },
+    { name = "swival", specifier = ">=0.1.27" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["charts"]
@@ -1872,7 +1872,7 @@ wheels = [
 
 [[package]]
 name = "swival"
-version = "0.1.26"
+version = "0.1.27"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "html-to-markdown" },
@@ -1886,9 +1886,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/1e/6cfbe610cc03c82fc656f687f6d86a8eb3d52fe760696c56935782528e5f/swival-0.1.26.tar.gz", hash = "sha256:80a447f5e4c4c855f680db7dcbb96cc01f83b48eba08f5f9e2cb305b9816201b", size = 1899110, upload-time = "2026-03-15T16:55:41.731Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/2f/d18617fe4c1cc5d45ec5cb4b9dd8f52700024691cdf22470521baead70df/swival-0.1.27.tar.gz", hash = "sha256:5c149d21547a9a46d87e9c5545cc200c44e3da6a716895e6273bc689de9ae579", size = 1927917, upload-time = "2026-03-16T09:45:29.943Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/5b/4fd9fcff9b49b7a7887d1c926b43d317e8fca206876fd1c94254016226c4/swival-0.1.26-py3-none-any.whl", hash = "sha256:4a40b4169a0aace44ed1e5ca64856a6377ca2e1254e50c03c2f1f5dac84ebee5", size = 142925, upload-time = "2026-03-15T16:55:40.141Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/5a/be0f11e21e4fc9b2cb9f0f34359bccc3058e4d524a69c142e8328bef13bf/swival-0.1.27-py3-none-any.whl", hash = "sha256:6cea20204a384eb112c66417f82b7c17c170605bf0be197c4d15e905a24a1123", size = 143461, upload-time = "2026-03-16T09:45:31.417Z" },
 ]
 
 [[package]]
