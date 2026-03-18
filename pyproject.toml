@@ -7,7 +7,7 @@ name = "calibra"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
-    "swival>=0.1.30",
+    "swival>=0.1.31",
     "rich",
     "fastapi>=0.135.1",
     "uvicorn[standard]>=0.41.0",
