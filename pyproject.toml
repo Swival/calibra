@@ -25,6 +25,25 @@ dev = ["pytest", "ruff"]
 website = ["markdown", "pillow"]
 
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "calibra/",
+    "tests/",
+    "pyproject.toml",
+    "README.md",
+    "LICENSE",
+]
+exclude = [
+    "experiments/",
+    "results/",
+    "tasks/",
+    "plans/",
+    "scripts/",
+    "docs/",
+    "docs.md/",
+    "tmp/",
+]
+
 [tool.ruff]
 line-length = 100
 exclude = ["tasks/"]
