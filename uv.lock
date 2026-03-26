@@ -163,7 +163,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'charts'" },
     { name = "rich" },
-    { name = "swival", specifier = ">=0.9.3" },
+    { name = "swival", specifier = ">=0.9.4" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["charts"]
@@ -645,13 +645,13 @@ wheels = [
 
 [[package]]
 name = "html-to-markdown"
-version = "2.28.1"
+version = "2.29.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/46/6d/af303c3ea87daedc248fbe0fb79c1913a1731b75ed74f7dc7a53864bf79a/html_to_markdown-2.28.1.tar.gz", hash = "sha256:e2dd0c2a6b4507dbe3a4ec2e815451c2bba35d28428f5340b44145e5ec8e8522", size = 308699, upload-time = "2026-03-07T08:29:20.842Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/c7/e93b067527880dd488263bad17aef1ab857bd386792677f7720694bcf25d/html_to_markdown-2.29.0.tar.gz", hash = "sha256:7ae9ae76b408709366adc99d2c2507dfa2ea84fd19a94e99e5a64e5bb7a7ca0e", size = 312274, upload-time = "2026-03-22T10:09:16.267Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/da/074d0d328bd527740e2ad5c4bcd60a2835c74ee7f16789f3f2eb2717ac1d/html_to_markdown-2.28.1-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:6e68e283eac710b76b894d269ae4753b4d4d3f1cc1fdd1f2e8f3cc83838abcd8", size = 8880836, upload-time = "2026-03-07T08:29:14.446Z" },
-    { url = "https://files.pythonhosted.org/packages/75/3c/00703916ca8179883a80f8b91624ec15939caeba2718caa66425becfefa6/html_to_markdown-2.28.1-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:75d4937c0ba795cd18dcc95f77956d8bbe73f8e3493f2c30ea5d76d25e77662a", size = 9688758, upload-time = "2026-03-07T08:29:16.995Z" },
-    { url = "https://files.pythonhosted.org/packages/eb/43/d26b75fc93eb8948843c1c254c78da79cb87694277b9883c0aa4970ab29b/html_to_markdown-2.28.1-cp310-abi3-win_amd64.whl", hash = "sha256:1e6f92271bff5d77bf13a4cdd9ea9e1979e8775ee42149cb3148b56d820bb6ef", size = 9309750, upload-time = "2026-03-07T08:29:19.033Z" },
+    { url = "https://files.pythonhosted.org/packages/13/20/7a8b9ce3be865178f96f99adcb2db2cd46cbcd3f0189f4892101697d798b/html_to_markdown-2.29.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:bfd141cd2a3df50bd93bdd6ec5df364e7232f174ef93bc444746e7e7f9071f2d", size = 8891342, upload-time = "2026-03-22T10:09:10.138Z" },
+    { url = "https://files.pythonhosted.org/packages/47/18/417b074088b5840221ab788089bcd89339e8b8b367bb457ec339c91cc81e/html_to_markdown-2.29.0-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:db3319e82d2b0c696be6a80dc699d19cdf868a9f859e11bcdb6f8358422cca18", size = 9705068, upload-time = "2026-03-22T10:09:12.191Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/70/cbec633dc9f8904890879fc70813226e9bce4e9900ca78c0251b9ad91e9e/html_to_markdown-2.29.0-cp310-abi3-win_amd64.whl", hash = "sha256:fbec6d3c383cc15a9c36797c73cd51d9d1944ad8713445ae3cc5be8b8baa0125", size = 9328942, upload-time = "2026-03-22T10:09:14.228Z" },
 ]
 
 [[package]]
@@ -914,7 +914,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.82.3"
+version = "1.82.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -930,9 +930,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/53/00/13993312e6d2fb29cd6d5ffceb293455ef747fe5675eaa9aa49b09184656/litellm-1.82.3.tar.gz", hash = "sha256:7215b95e7cc38a52b5ae778d67e8829dec86594c8b05d8431294e95c7d59937c", size = 17368754, upload-time = "2026-03-16T21:51:30.356Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/75/1c537aa458426a9127a92bc2273787b2f987f4e5044e21f01f2eed5244fd/litellm-1.82.6.tar.gz", hash = "sha256:2aa1c2da21fe940c33613aa447119674a3ad4d2ad5eb064e4d5ce5ee42420136", size = 17414147, upload-time = "2026-03-22T06:36:00.452Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/3a/590d58dee65a238f7f3d5c37f8f9f9021ecaf27fe379a393b4259324b56e/litellm-1.82.3-py3-none-any.whl", hash = "sha256:609901f6c5a5cf8c24386e4e3f50738bb8a9db719709fd76b208c8ee6d00f7a7", size = 15551034, upload-time = "2026-03-16T21:51:26.747Z" },
+    { url = "https://files.pythonhosted.org/packages/02/6c/5327667e6dbe9e98cbfbd4261c8e91386a52e38f41419575854248bbab6a/litellm-1.82.6-py3-none-any.whl", hash = "sha256:164a3ef3e19f309e3cabc199bef3d2045212712fefdfa25fc7f75884a5b5b205", size = 15591595, upload-time = "2026-03-22T06:35:56.795Z" },
 ]
 
 [[package]]
@@ -1872,19 +1872,19 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.52.1"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/68/79977123bb7be889ad680d79a40f339082c1978b5cfcf62c2d8d196873ac/starlette-0.52.1.tar.gz", hash = "sha256:834edd1b0a23167694292e94f597773bc3f89f362be6effee198165a35d62933", size = 2653702, upload-time = "2026-01-18T13:34:11.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/69/17425771797c36cded50b7fe44e850315d039f28b15901ab44839e70b593/starlette-1.0.0.tar.gz", hash = "sha256:6a4beaf1f81bb472fd19ea9b918b50dc3a77a6f2e190a12954b25e6ed5eea149", size = 2655289, upload-time = "2026-03-22T18:29:46.779Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/0d/13d1d239a25cbfb19e740db83143e95c772a1fe10202dda4b76792b114dd/starlette-0.52.1-py3-none-any.whl", hash = "sha256:0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74", size = 74272, upload-time = "2026-01-18T13:34:09.188Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/c9/584bc9651441b4ba60cc4d557d8a547b5aff901af35bda3a4ee30c819b82/starlette-1.0.0-py3-none-any.whl", hash = "sha256:d3ec55e0bb321692d275455ddfd3df75fff145d009685eb40dc91fc66b03d38b", size = 72651, upload-time = "2026-03-22T18:29:45.111Z" },
 ]
 
 [[package]]
 name = "swival"
-version = "0.9.3"
+version = "0.9.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fast-cipher" },
@@ -1899,9 +1899,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/42/cde6d9fcee1c37f7f86a71374f99cef782b398e1fbecd53c84b56acf350c/swival-0.9.3.tar.gz", hash = "sha256:43cf2706da8a0cc67ae6afcf7642a5239cbc7afc291838a81ed75b2a7928575d", size = 367507, upload-time = "2026-03-25T12:03:57.028Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/be/4a8dc7b4a0ed204a1992f047ac32f672c091dc6f8df9162c5335cf95b306/swival-0.9.4.tar.gz", hash = "sha256:f56cb1a09bad2eca7f96ce0926033a938fa753450dc0ae683f6b41dab644349d", size = 369077, upload-time = "2026-03-26T02:16:28.649Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/9b/c5c133246eff14f9091fb9ce988bf766a437fc5c5778f9a5909e62fcf89e/swival-0.9.3-py3-none-any.whl", hash = "sha256:cc4674d9f2630b8fe48703a1398fea1cb03c5e525c0239d7af608ef0062e45a0", size = 175461, upload-time = "2026-03-25T12:03:58.672Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/18/ddcbf899603e161ad4a4e30f55a52a5beef99910fb1b6fc2b47ed6c90163/swival-0.9.4-py3-none-any.whl", hash = "sha256:6fd35175ec574ba393b8286973ec3545a3d79c960eb5758c3015faae76c5999c", size = 175932, upload-time = "2026-03-26T02:16:26.826Z" },
 ]
 
 [[package]]
@@ -2029,15 +2029,15 @@ wheels = [
 
 [[package]]
 name = "uvicorn"
-version = "0.41.0"
+version = "0.42.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/32/ce/eeb58ae4ac36fe09e3842eb02e0eb676bf2c53ae062b98f1b2531673efdd/uvicorn-0.41.0.tar.gz", hash = "sha256:09d11cf7008da33113824ee5a1c6422d89fbc2ff476540d69a34c87fab8b571a", size = 82633, upload-time = "2026-02-16T23:07:24.1Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/ad/4a96c425be6fb67e0621e62d86c402b4a17ab2be7f7c055d9bd2f638b9e2/uvicorn-0.42.0.tar.gz", hash = "sha256:9b1f190ce15a2dd22e7758651d9b6d12df09a13d51ba5bf4fc33c383a48e1775", size = 85393, upload-time = "2026-03-16T06:19:50.077Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/83/e4/d04a086285c20886c0daad0e026f250869201013d18f81d9ff5eada73a88/uvicorn-0.41.0-py3-none-any.whl", hash = "sha256:29e35b1d2c36a04b9e180d4007ede3bcb32a85fbdfd6c6aeb3f26839de088187", size = 68783, upload-time = "2026-02-16T23:07:22.357Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/89/f8827ccff89c1586027a105e5630ff6139a64da2515e24dafe860bd9ae4d/uvicorn-0.42.0-py3-none-any.whl", hash = "sha256:96c30f5c7abe6f74ae8900a70e92b85ad6613b745d4879eb9b16ccad15645359", size = 68830, upload-time = "2026-03-16T06:19:48.325Z" },
 ]
 
 [package.optional-dependencies]
