@@ -410,7 +410,7 @@ def test_session_type_validation_wrong_type(tmp_path):
 
 
 def test_session_type_validation_list_elements(tmp_path):
-    toml = _session_toml(session="[session]\nallowed_commands = [1, 2]")
+    toml = _session_toml(session="[session]\nallowed_dirs = [1, 2]")
     config = _write_campaign(tmp_path, toml)
     with pytest.raises(ConfigError, match="wrong type"):
         load_campaign(config)
@@ -463,8 +463,8 @@ skills_dirs = []
     assert campaign.session_options["no_skills"] is True
 
 
-def test_session_valid_allowed_commands(tmp_path):
-    toml = _session_toml(session='[session]\nallowed_commands = ["python", "uv"]')
+def test_session_valid_commands(tmp_path):
+    toml = _session_toml(session='[session]\ncommands = ["python", "uv"]')
     config = _write_campaign(tmp_path, toml)
     campaign = load_campaign(config)
-    assert campaign.session_options["allowed_commands"] == ["python", "uv"]
+    assert campaign.session_options["commands"] == ["python", "uv"]

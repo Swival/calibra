@@ -298,13 +298,13 @@ exclude = { mcp = "none" }
 
 ## [session] options
 
-The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings.
+The `[session]` table lets you pass additional parameters to Swival's `Session` constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, filesystem access, temperature, API keys, and sandbox settings.
 
 Campaign-wide defaults go in a top-level `[session]` table, while per-model overrides go either directly on the `[[matrix.model]]` entry or in an inline `session` sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like `extra_body` combine rather than replace.
 
 ```toml
 [session]
-allowed_commands = ["python", "uv", "git"]
+commands = ["python", "uv", "git"]
 temperature = 0.0
 
 [[matrix.model]]
@@ -326,7 +326,7 @@ label = "sonnet"
 # inherits campaign [session] as-is
 ```
 
-For the `qwen` model, the effective session options are `allowed_commands = ["python", "uv", "git"]`, `temperature = 0.0`, and `base_url = "http://max.local:1234"`. For the `glm` model, the effective options include the campaign defaults plus `extra_body`. The `sonnet` model inherits only the campaign defaults.
+For the `qwen` model, the effective session options are `commands = ["python", "uv", "git"]`, `temperature = 0.0`, and `base_url = "http://max.local:1234"`. For the `glm` model, the effective options include the campaign defaults plus `extra_body`. The `sonnet` model inherits only the campaign defaults.
 
 ### Allowed options
 
@@ -340,8 +340,9 @@ Any `Session.__init__` parameter that isn't managed by Calibra internally:
 | `max_context_tokens`   | int       | Max context window size                           |
 | `temperature`          | float     | Sampling temperature                              |
 | `top_p`                | float     | Nucleus sampling threshold                        |
-| `allowed_commands`     | list[str] | Whitelist of shell commands the agent may run     |
-| `yolo`                 | bool      | Skip command approval (see below)                 |
+| `commands`             | str or list[str] | Shell command policy: `"all"` (default), `"none"`, or a list of allowed command names |
+| `files`                | str       | Filesystem access policy: `"some"` (workspace only, default), `"all"`, or `"none"` |
+| `yolo`                 | bool      | Shorthand for `commands = "all"` and `files = "all"` (see below) |
 | `verbose`              | bool      | Enable verbose agent output                       |
 | `no_skills`            | bool      | Disable skills loading                            |
 | `allowed_dirs`         | list[str] | Directories the agent may read and write          |
@@ -364,11 +365,13 @@ These parameters are set by Calibra internally and cannot appear in session opti
 
 `system_prompt`, `no_system_prompt`, and `no_instructions` are unconditionally blocked because they conflict with the agent instructions dimension.
 
-### yolo and allowed_commands
+### yolo, commands, and files
 
-By default, Calibra sets `yolo=true` so the agent runs without interactive command approval. When you set `allowed_commands` without explicitly setting `yolo`, Calibra defaults `yolo` to `false` so the allowlist takes effect.
+By default, Calibra sets `yolo=true` so the agent runs without interactive command approval and with full filesystem access. The `yolo` flag is shorthand for `commands = "all"` and `files = "all"`.
 
-If you explicitly set both `allowed_commands` and `yolo = true`, the allowlist becomes a no-op. Calibra will warn about this but not reject it.
+When you set `commands` to a list of allowed command names (or `"none"`) without explicitly setting `yolo`, Calibra defaults `yolo` to `false` so the allowlist takes effect. The `files` option controls filesystem access independently: `"some"` (workspace only, the default when `yolo` is false), `"all"` (unrestricted), or `"none"` (restricted to `.swival/` only).
+
+If you explicitly set both `commands` and `yolo = true`, the command restriction becomes a no-op. Calibra will warn about this but not reject it.
 
 ### no_skills guard
 
@@ -376,7 +379,7 @@ Setting `no_skills = true` is allowed only when all skills variants in the matri
 
 ### Type validation
 
-Session option values are type-checked against Swival's `Session.__init__` annotations. For example, `temperature` must be a number, `allowed_commands` must be a list of strings, and `verbose` must be a boolean. Mismatches produce a clear error at config validation time.
+Session option values are type-checked against Swival's `Session.__init__` annotations. For example, `temperature` must be a number, `commands` must be a string or list of strings, and `verbose` must be a boolean. Mismatches produce a clear error at config validation time.
 
 ## Complete example
 
@@ -393,7 +396,7 @@ timeout_s = 240
 seed = 42
 
 [session]
-allowed_commands = ["python", "uv", "git"]
+commands = ["python", "uv", "git"]
 temperature = 0.0
 
 [budget]

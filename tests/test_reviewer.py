@@ -198,9 +198,9 @@ class TestSessionOptsToCli:
         args = _session_opts_to_cli_args({"yolo": False})
         assert "--yolo" not in args
 
-    def test_allowed_commands_comma_separated(self):
-        args = _session_opts_to_cli_args({"allowed_commands": ["python", "uv", "git"]})
-        idx = args.index("--allowed-commands")
+    def test_commands_comma_separated(self):
+        args = _session_opts_to_cli_args({"commands": ["python", "uv", "git"]})
+        idx = args.index("--commands")
         assert args[idx + 1] == "python,uv,git"
 
     def test_skills_dir_repeated(self):
@@ -456,8 +456,8 @@ class TestRunTrialCli:
             argv = mock_popen.call_args[0][0]
             assert "--yolo" in argv
 
-    def test_yolo_false_with_allowed_commands(self, tmp_path):
-        """CLI path must auto-disable yolo when allowed_commands is set."""
+    def test_yolo_false_with_commands(self, tmp_path):
+        """CLI path must auto-disable yolo when commands is set."""
         task = _task(tmp_path)
         reviewer = ReviewerConfig(command="/usr/bin/true", max_rounds=3)
         campaign = _campaign(reviewer=reviewer)
@@ -474,12 +474,12 @@ class TestRunTrialCli:
                 spec,
                 campaign,
                 keep_workdirs=False,
-                merged_session_opts={"allowed_commands": ["python"]},
+                merged_session_opts={"commands": ["python"]},
             )
 
             argv = mock_popen.call_args[0][0]
             assert "--yolo" not in argv
-            assert "--allowed-commands" in argv
+            assert "--commands" in argv
 
     def test_report_read_and_verdict(self, tmp_path):
         task = _task(tmp_path)

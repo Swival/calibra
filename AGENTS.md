@@ -1,48 +1,25 @@
-# Repository Guidelines
+## Workflow
 
-## Project Structure & Module Organization
-- `calibra/`: core package (`cli.py`, runner, matrix/config, analysis/reporting, and web dashboard code in `calibra/web/`).
-- `tests/`: pytest suite covering CLI, runner, analysis, and web routes/security.
-- `tasks/`: benchmark tasks. Each task directory should include `task.md`, `env/`, and usually `verify.sh`.
-- `experiments/`: campaign TOML files and experiment-specific task sets.
-- `results/`: generated trial JSON files plus `summary.{json,md,csv}` outputs.
-- `docs.md/`: project documentation; `scripts/`: maintenance utilities.
+- install: `make install`
+- build: `make website`
+- test all: `make test`
+- test file: `uv run pytest tests/test_config.py`
+- test case: `uv run pytest tests/test_config.py::test_name`
+- lint: `make lint`
+- format: `make format`
+- after every edit: `make check && make test`
+- debug: `uv run calibra validate experiments/model-shootout.toml`; `uv run calibra run experiments/model-shootout.toml --dry-run`; `uv run calibra run experiments/model-shootout.toml -v`; `uv run calibra run experiments/model-shootout.toml --keep-workdirs`; reviewer mode isolates config via temp `XDG_CONFIG_HOME` and removes copied `swival.toml`
 
-## Build, Test, and Development Commands
-- `uv sync`: install dependencies from `pyproject.toml`/`uv.lock`.
-- `make test` (or `uv run pytest`): run the full test suite.
-- `make lint`: run Ruff checks on `calibra/` and `tests/`.
-- `make format`: format code with Ruff.
-- `make check`: lint + formatting check (CI-style gate).
-- `uv run calibra validate experiments/<campaign>.toml`: validate a campaign before execution.
-- `uv run calibra run experiments/<campaign>.toml --workers 2`: execute a campaign locally.
+## Conventions
 
-## Coding Style & Naming Conventions
-- Target Python `>=3.13`; use 4-space indentation and keep lines <=100 chars (`ruff` setting).
-- Use snake_case for modules/functions/variables and PascalCase for classes.
-- Prefer explicit, small functions and type-aware interfaces in core logic.
-- Test modules should follow `tests/test_<area>.py`.
-- Variant labels must be underscore-joined as `model_agent_skills_mcp_environment` because they are used in paths, endpoints, and cache keys.
-
-## Testing Guidelines
-- Framework: `pytest` (shared fixtures in `tests/conftest.py`).
-- Add/update tests for every behavior change, especially runner retries, failure classification, and web security checks.
-- For new tasks, ensure `verify.sh` is executable and returns exit code `0` when passing.
-- During development, run targeted tests (example: `uv run pytest tests/test_runner.py`) and run full tests before opening a PR.
-
-## Reviewer Support Conventions
-
-- When `[reviewer]` is configured in the campaign, Calibra switches from the Swival Session API to CLI invocation with `--report` and `--reviewer` flags. This is because `Session.ask()` returns `report=None`, making retry round data invisible to metrics and budget tracking.
-- Config isolation: CLI trials set `XDG_CONFIG_HOME` to an empty temp directory and delete any `swival.toml` from the workspace to prevent user/project config leakage. `--no-mcp` is passed unless an MCP variant provides explicit config.
-- MCP format conversion: Calibra's flat `{"server": {...}}` format is wrapped in `{"mcpServers": {...}}` for CLI mode, since Swival CLI expects the wrapper.
-- Reviewer verdict semantics (intentional divergence from Swival): max-rounds-hit with rejection sets `verified=False` (Swival accepts as-is). Reviewer error (exit 2+) sets `verified=None` (Swival accepts as-is). Rationale: in a benchmark, "the reviewer says this is wrong" should not count as a pass.
-- `review_rounds` metric is extracted from `stats.review_rounds` or `calibra.review_rounds` in trial reports. It is conditionally included in analysis output (rankings, CSV, MD) only when any variant has review_rounds > 0.
-- `reviewer_verdict` is one of `"accepted"` (exit 0), `"rejected"` (exit 1 at max rounds), or `"error"` (exit 2+).
-- CLI failure classification (`_classify_cli_failure`) uses report-based classification first, with a stderr provider-pattern override when the report says "task" but the exit code is non-zero. This preserves tool-failure detection from reports while still catching provider errors surfaced only in stderr.
-- `verify.sh` is skipped when a reviewer is configured; the reviewer determines pass/fail.
-- The yolo default in CLI mode matches Session mode: `_resolve_yolo()` is called, defaulting to `--yolo` unless `allowed_commands` is set.
-
-## Commit & Pull Request Guidelines
-- Keep commit subjects short, imperative, and specific (matching existing history like `Factorize`, `Add some example tasks`).
-- Make focused commits; avoid mixing unrelated refactors and feature changes.
-- PRs should include a concise change summary, rationale, impacted configs/commands, and test evidence (commands run and results). Include UI screenshots only for dashboard/template changes.
+- Variant labels are always `{model}_{agent_instructions}_{skills}_{mcp}_{environment}` in that order. Those labels are reused in filenames, filters, API paths, and reports.
+- Omitted matrix dimensions default to `agent_instructions=default`, `skills=none`, `mcp=none`, and `environment=base`. These defaults affect variant names and output paths.
+- Tasks are only discovered one level deep under `tasks_dir`, sorted alphabetically. Every direct child directory must contain non-empty `task.md`, `env/`, and executable `verify.sh` if present.
+- Trial workspaces are assembled in a fixed order: copy `env/`, then apply environment overlay, then copy `AGENTS.md`. Later steps override earlier files on conflicts.
+- With `[reviewer]`, Calibra runs `swival` CLI instead of Session mode and skips `verify.sh`. `verified` comes from reviewer outcomes, and reports add `review_rounds` plus `reviewer_verdict`.
+- `--resume` only skips a trial when `config_hash`, `task`, `variant`, and `repeat` all match the existing JSON. Config changes intentionally invalidate prior results.
+- Trial JSON lives at `results/<campaign>/<task>/<variant>_<repeat>.json`. Analysis writes `summary.json`, `summary.md`, and `summary.csv`, and web/cache code depends on that layout.
+- Every trial report must include a `calibra` block with `config_hash`, `task`, `variant`, `repeat`, `trial_seed`, `wall_time_s`, and `attempts`. Other modules read those fields back during resume, analysis, and web rendering.
+- Project-written JSON uses `indent=2` with a trailing newline. Keep that formatting when adding generated JSON.
+- Session options are deep-merged from campaign-level `[session]` and per-model overrides. If `commands` is set without explicit `yolo`, Calibra forces `yolo = false` so the allowlist takes effect.
+- `prices.toml` keys use `"provider/model"` strings. Budget and price coverage logic depend on that exact format.

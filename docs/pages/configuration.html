@@ -536,10 +536,10 @@ when = { environment = &quot;production&quot; }
 exclude = { mcp = &quot;none&quot; }
 </code></pre>
 <h2 id="session-options">[session] options</h2>
-<p>The <code>[session]</code> table lets you pass additional parameters to Swival's <code>Session</code> constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, temperature, API keys, and sandbox settings.</p>
+<p>The <code>[session]</code> table lets you pass additional parameters to Swival's <code>Session</code> constructor. These control agent behavior that isn't part of the matrix, things like command allowlists, filesystem access, temperature, API keys, and sandbox settings.</p>
 <p>Campaign-wide defaults go in a top-level <code>[session]</code> table, while per-model overrides go either directly on the <code>[[matrix.model]]</code> entry or in an inline <code>session</code> sub-table. Per-model values are deep-merged on top of campaign defaults, so nested dicts like <code>extra_body</code> combine rather than replace.</p>
 <pre><code class="language-toml">[session]
-allowed_commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
+commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
 temperature = 0.0
 
 [[matrix.model]]
@@ -560,7 +560,7 @@ model = &quot;claude-sonnet-4.6&quot;
 label = &quot;sonnet&quot;
 # inherits campaign [session] as-is
 </code></pre>
-<p>For the <code>qwen</code> model, the effective session options are <code>allowed_commands = ["python", "uv", "git"]</code>, <code>temperature = 0.0</code>, and <code>base_url = "http://max.local:1234"</code>. For the <code>glm</code> model, the effective options include the campaign defaults plus <code>extra_body</code>. The <code>sonnet</code> model inherits only the campaign defaults.</p>
+<p>For the <code>qwen</code> model, the effective session options are <code>commands = ["python", "uv", "git"]</code>, <code>temperature = 0.0</code>, and <code>base_url = "http://max.local:1234"</code>. For the <code>glm</code> model, the effective options include the campaign defaults plus <code>extra_body</code>. The <code>sonnet</code> model inherits only the campaign defaults.</p>
 <h3 id="allowed-options">Allowed options</h3>
 <p>Any <code>Session.__init__</code> parameter that isn't managed by Calibra internally:</p>
 <table>
@@ -603,14 +603,19 @@ label = &quot;sonnet&quot;
 <td>Nucleus sampling threshold</td>
 </tr>
 <tr>
-<td><code>allowed_commands</code></td>
-<td>list[str]</td>
-<td>Whitelist of shell commands the agent may run</td>
+<td><code>commands</code></td>
+<td>str or list[str]</td>
+<td>Shell command policy: <code>"all"</code> (default), <code>"none"</code>, or a list of allowed command names</td>
+</tr>
+<tr>
+<td><code>files</code></td>
+<td>str</td>
+<td>Filesystem access policy: <code>"some"</code> (workspace only, default), <code>"all"</code>, or <code>"none"</code></td>
 </tr>
 <tr>
 <td><code>yolo</code></td>
 <td>bool</td>
-<td>Skip command approval (see below)</td>
+<td>Shorthand for <code>commands = "all"</code> and <code>files = "all"</code> (see below)</td>
 </tr>
 <tr>
 <td><code>verbose</code></td>
@@ -674,13 +679,14 @@ label = &quot;sonnet&quot;
 <p><code>base_dir</code>, <code>provider</code>, <code>model</code>, <code>max_turns</code>, <code>seed</code>, <code>history</code>, <code>skills_dir</code>, <code>mcp_servers</code>, <code>config_dir</code>.</p>
 <h3 id="blocked-options">Blocked options</h3>
 <p><code>system_prompt</code>, <code>no_system_prompt</code>, and <code>no_instructions</code> are unconditionally blocked because they conflict with the agent instructions dimension.</p>
-<h3 id="yolo-and-allowed_commands">yolo and allowed_commands</h3>
-<p>By default, Calibra sets <code>yolo=true</code> so the agent runs without interactive command approval. When you set <code>allowed_commands</code> without explicitly setting <code>yolo</code>, Calibra defaults <code>yolo</code> to <code>false</code> so the allowlist takes effect.</p>
-<p>If you explicitly set both <code>allowed_commands</code> and <code>yolo = true</code>, the allowlist becomes a no-op. Calibra will warn about this but not reject it.</p>
+<h3 id="yolo-commands-and-files">yolo, commands, and files</h3>
+<p>By default, Calibra sets <code>yolo=true</code> so the agent runs without interactive command approval and with full filesystem access. The <code>yolo</code> flag is shorthand for <code>commands = "all"</code> and <code>files = "all"</code>.</p>
+<p>When you set <code>commands</code> to a list of allowed command names (or <code>"none"</code>) without explicitly setting <code>yolo</code>, Calibra defaults <code>yolo</code> to <code>false</code> so the allowlist takes effect. The <code>files</code> option controls filesystem access independently: <code>"some"</code> (workspace only, the default when <code>yolo</code> is false), <code>"all"</code> (unrestricted), or <code>"none"</code> (restricted to <code>.swival/</code> only).</p>
+<p>If you explicitly set both <code>commands</code> and <code>yolo = true</code>, the command restriction becomes a no-op. Calibra will warn about this but not reject it.</p>
 <h3 id="no_skills-guard">no_skills guard</h3>
 <p>Setting <code>no_skills = true</code> is allowed only when all skills variants in the matrix have empty <code>skills_dirs</code>. If any skills variant has actual directories, <code>no_skills</code> would silently neutralize the skills dimension, so Calibra rejects it.</p>
 <h3 id="type-validation">Type validation</h3>
-<p>Session option values are type-checked against Swival's <code>Session.__init__</code> annotations. For example, <code>temperature</code> must be a number, <code>allowed_commands</code> must be a list of strings, and <code>verbose</code> must be a boolean. Mismatches produce a clear error at config validation time.</p>
+<p>Session option values are type-checked against Swival's <code>Session.__init__</code> annotations. For example, <code>temperature</code> must be a number, <code>commands</code> must be a string or list of strings, and <code>verbose</code> must be a boolean. Mismatches produce a clear error at config validation time.</p>
 <h2 id="complete-example">Complete example</h2>
 <p>Here's a realistic campaign config using most features:</p>
 <pre><code class="language-toml">[campaign]
@@ -693,7 +699,7 @@ timeout_s = 240
 seed = 42
 
 [session]
-allowed_commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
+commands = [&quot;python&quot;, &quot;uv&quot;, &quot;git&quot;]
 temperature = 0.0
 
 [budget]

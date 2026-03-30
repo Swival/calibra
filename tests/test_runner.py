@@ -240,8 +240,8 @@ def test_merge_session_options_deep_merge_extra_body():
     assert result == {"extra_body": {"a": 1, "b": 2, "nested": {"x": 10, "y": 20}}}
 
 
-def test_validate_merged_allowed_commands_plus_yolo_warns():
-    opts = {"allowed_commands": ["python"], "yolo": True}
+def test_validate_merged_commands_plus_yolo_warns():
+    opts = {"commands": ["python"], "yolo": True}
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         _validate_merged_options(opts, [_variant()])
@@ -271,16 +271,16 @@ def test_resolve_yolo_defaults_true():
 
 
 def test_resolve_yolo_with_allowlist_auto_false():
-    yolo, opts = _resolve_yolo({"allowed_commands": ["python"]})
+    yolo, opts = _resolve_yolo({"commands": ["python"]})
     assert yolo is False
-    assert opts == {"allowed_commands": ["python"]}
+    assert opts == {"commands": ["python"]}
 
 
 def test_resolve_yolo_explicit_overrides_allowlist():
-    yolo, opts = _resolve_yolo({"allowed_commands": ["python"], "yolo": True})
+    yolo, opts = _resolve_yolo({"commands": ["python"], "yolo": True})
     assert yolo is True
     assert "yolo" not in opts
-    assert opts == {"allowed_commands": ["python"]}
+    assert opts == {"commands": ["python"]}
 
 
 def test_resolve_yolo_does_not_mutate_input():
@@ -312,19 +312,19 @@ def _run_with_mock_session(tmp_path, merged_session_opts, verbose=False):
     return kwargs
 
 
-def test_yolo_auto_flip_with_allowed_commands(tmp_path):
-    kwargs = _run_with_mock_session(tmp_path, {"allowed_commands": ["python"]})
+def test_yolo_auto_flip_with_commands(tmp_path):
+    kwargs = _run_with_mock_session(tmp_path, {"commands": ["python"]})
     assert kwargs["yolo"] is False
-    assert kwargs["allowed_commands"] == ["python"]
+    assert kwargs["commands"] == ["python"]
 
 
-def test_yolo_explicit_true_with_allowed_commands(tmp_path):
-    kwargs = _run_with_mock_session(tmp_path, {"allowed_commands": ["python"], "yolo": True})
+def test_yolo_explicit_true_with_commands(tmp_path):
+    kwargs = _run_with_mock_session(tmp_path, {"commands": ["python"], "yolo": True})
     assert kwargs["yolo"] is True
-    assert kwargs["allowed_commands"] == ["python"]
+    assert kwargs["commands"] == ["python"]
 
 
-def test_yolo_default_true_without_allowed_commands(tmp_path):
+def test_yolo_default_true_without_commands(tmp_path):
     kwargs = _run_with_mock_session(tmp_path, {})
     assert kwargs["yolo"] is True
 

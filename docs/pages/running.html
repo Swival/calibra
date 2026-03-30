@@ -64,7 +64,7 @@
 </code></pre>
 <p>Validation checks TOML syntax and required fields, task directory structure (that <code>task.md</code> exists, <code>env/</code> is a directory, and <code>verify.sh</code> is executable), that matrix dimension labels are unique within each dimension, that constraint references point to existing labels, and price coverage if <code>require_price_coverage = true</code>.</p>
 <p>On success you'll see something like:</p>
-<pre><code>Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
+<pre><code class="language-text">Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 </code></pre>
 <h2 id="dry-run">Dry run</h2>
 <p>To see the full trial plan without executing anything:</p>
@@ -85,7 +85,7 @@
 <pre><code class="language-bash">uv run calibra run experiments/model-shootout.toml --output my-results
 </code></pre>
 <p>The output structure looks like:</p>
-<pre><code>results/
+<pre><code class="language-text">results/
   model-shootout/
     hello-world/
       sonnet_minimal_none_none_base_0.json
@@ -131,12 +131,12 @@ uv run calibra run experiments/model-shootout.toml --task hello-world --task fix
 </code></pre>
 <p>A trial is considered complete only if all identity fields in the existing JSON match the current run: <code>config_hash</code>, <code>task</code>, <code>variant</code>, and <code>repeat</code>. If you change the config (even slightly), the config hash changes and all trials re-run. This prevents stale results from mixing with new ones.</p>
 <h2 id="workspace-setup">Workspace setup</h2>
-<p>For each trial, Calibra sets up an isolated workspace in a specific order. First, it creates a temp directory with prefix <code>calibra_{task_name}_</code>. Then it copies the <code>env/</code> files from the task directory. Next, it applies the environment overlay (if the variant has one), overwriting any conflicting files. Finally, it copies <code>AGENTS.md</code> from the agent instructions path. 
-This ordering matters: the overlay can override env files, and <code>AGENTS.md</code> is always the last file placed.</p>
+<p>For each trial, Calibra sets up an isolated workspace in a specific order. First, it creates a temp directory with prefix <code>calibra_{task_name}_</code>. Then it copies the <code>env/</code> files from the task directory. Next, it applies the environment overlay (if the variant has one), overwriting any conflicting files. Finally, it copies <code>AGENTS.md</code> from the agent instructions path.</p>
+<p>This ordering matters: the overlay can override env files, and <code>AGENTS.md</code> is always the last file placed.</p>
 <h2 id="trial-execution-flow">Trial execution flow</h2>
 <p>For each trial, Calibra sets up the workspace as described above, then computes a deterministic trial seed from <code>SHA256(seed:task:variant:repeat)</code>.</p>
 <h3 id="session-mode-default">Session mode (default)</h3>
-<p>When no <code>[reviewer]</code> is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any <a href="configuration.html#session-options">session options</a> (campaign defaults deep-merged with per-model overrides). When <code>allowed_commands</code> is set without explicitly setting <code>yolo</code>, it defaults to <code>false</code> so the allowlist takes effect.</p>
+<p>When no <code>[reviewer]</code> is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any <a href="configuration.html#session-options">session options</a> (campaign defaults deep-merged with per-model overrides). When <code>commands</code> is set without explicitly setting <code>yolo</code>, it defaults to <code>false</code> so the allowlist takes effect.</p>
 <p>Calibra runs the agent within the <code>max_turns</code> and <code>timeout_s</code> limits, then runs <code>verify.sh</code> in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see <a href="configuration.html#retry-section">retry config</a>). Finally, the JSON report is written.</p>
 <h3 id="reviewer-mode">Reviewer mode</h3>
 <p>When a <code>[reviewer]</code> is configured, Calibra runs the <code>swival</code> CLI as a subprocess instead of using the Session API. This is necessary because the reviewer feature is CLI-only in Swival, and <code>Session.ask()</code> returns <code>report=None</code> so retry round data would be invisible to metrics and budget tracking.</p>
@@ -145,13 +145,13 @@ This ordering matters: the overlay can override env files, and <code>AGENTS.md</
 <p>After the subprocess completes, Calibra reads the report JSON, determines <code>verified</code> from the last review event in the timeline (exit 0 = true, exit 1 = false, exit 2+ = null), and classifies failures using the report data first with a stderr fallback. <code>verify.sh</code> is skipped in reviewer mode.</p>
 <h2 id="monitoring-progress">Monitoring progress</h2>
 <p>Calibra prints progress to stdout as trials complete. By default, a compact format is used:</p>
-<pre><code>  [PASS] hello-world / sonnet_minimal_none_none_base #0
+<pre><code class="language-text">  [PASS] hello-world / sonnet_minimal_none_none_base #0
   [PASS] hello-world / sonnet_minimal_none_none_base #1
   [TASK] hello-world / sonnet_minimal_none_none_base #2
 </code></pre>
 <p>The status label reflects the failure class (e.g., <code>PASS</code>, <code>TASK</code>, <code>PROVIDER</code>, <code>TIMEOUT</code>).</p>
 <p>With <code>-v</code>/<code>--verbose</code>, each line includes a progress counter, timing, and per-trial stats:</p>
-<pre><code>  [1/250] [PASS] hello-world / sonnet_minimal_none_none_base #0  (12.3s | 3 turns | 2 tools | 2.1k tok)  [1P/0F]
+<pre><code class="language-text">  [1/250] [PASS] hello-world / sonnet_minimal_none_none_base #0  (12.3s | 3 turns | 2 tools | 2.1k tok)  [1P/0F]
   [2/250] [PASS] hello-world / sonnet_minimal_none_none_base #1  (11.8s | 3 turns | 2 tools | 1.9k tok)  [2P/0F]
   [3/250] [TASK] hello-world / sonnet_minimal_none_none_base #2  (15.1s | 5 turns | 4 tools | 3.2k tok)  [2P/1F]
 </code></pre>

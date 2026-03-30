@@ -35,7 +35,7 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 def _resolve_yolo(session_opts: dict) -> tuple[bool, dict]:
     opts = copy.deepcopy(session_opts)
-    has_allowlist = "allowed_commands" in opts
+    has_allowlist = "commands" in opts
     if has_allowlist and "yolo" not in opts:
         yolo = False
     else:
@@ -44,9 +44,9 @@ def _resolve_yolo(session_opts: dict) -> tuple[bool, dict]:
 
 
 def _validate_merged_options(opts: dict, model_variants: list[Variant]):
-    if "allowed_commands" in opts and opts.get("yolo") is True:
+    if "commands" in opts and opts.get("yolo") is True:
         warnings.warn(
-            "Session options contain both 'allowed_commands' and 'yolo=true'; "
+            "Session options contain both 'commands' and 'yolo=true'; "
             "yolo overrides the command allowlist",
             stacklevel=2,
         )
@@ -213,8 +213,11 @@ def _session_opts_to_cli_args(opts: dict) -> list[str]:
         if key in _CLI_VALUE_MAP:
             args.extend([_CLI_VALUE_MAP[key], str(value)])
             continue
-        if key == "allowed_commands" and isinstance(value, list):
-            args.extend(["--allowed-commands", ",".join(value)])
+        if key == "commands":
+            if isinstance(value, list):
+                args.extend(["--commands", ",".join(value)])
+            else:
+                args.extend(["--commands", str(value)])
             continue
         if key in _CLI_REPEAT_MAP and isinstance(value, list):
             for item in value:

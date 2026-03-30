@@ -12,7 +12,7 @@ Validation checks TOML syntax and required fields, task directory structure (tha
 
 On success you'll see something like:
 
-```
+```text
 Config valid. 10 variants x 5 tasks x 5 repeats = 250 trials.
 ```
 
@@ -54,7 +54,7 @@ uv run calibra run experiments/model-shootout.toml --output my-results
 
 The output structure looks like:
 
-```
+```text
 results/
   model-shootout/
     hello-world/
@@ -127,7 +127,8 @@ A trial is considered complete only if all identity fields in the existing JSON 
 
 ## Workspace setup
 
-For each trial, Calibra sets up an isolated workspace in a specific order. First, it creates a temp directory with prefix `calibra_{task_name}_`. Then it copies the `env/` files from the task directory. Next, it applies the environment overlay (if the variant has one), overwriting any conflicting files. Finally, it copies `AGENTS.md` from the agent instructions path. 
+For each trial, Calibra sets up an isolated workspace in a specific order. First, it creates a temp directory with prefix `calibra_{task_name}_`. Then it copies the `env/` files from the task directory. Next, it applies the environment overlay (if the variant has one), overwriting any conflicting files. Finally, it copies `AGENTS.md` from the agent instructions path.
+
 This ordering matters: the overlay can override env files, and `AGENTS.md` is always the last file placed.
 
 ## Trial execution flow
@@ -136,7 +137,7 @@ For each trial, Calibra sets up the workspace as described above, then computes 
 
 ### Session mode (default)
 
-When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `allowed_commands` is set without explicitly setting `yolo`, it defaults to `false` so the allowlist takes effect.
+When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `commands` is set without explicitly setting `yolo`, it defaults to `false` so the allowlist takes effect.
 
 Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
 
@@ -154,7 +155,7 @@ After the subprocess completes, Calibra reads the report JSON, determines `verif
 
 Calibra prints progress to stdout as trials complete. By default, a compact format is used:
 
-```
+```text
   [PASS] hello-world / sonnet_minimal_none_none_base #0
   [PASS] hello-world / sonnet_minimal_none_none_base #1
   [TASK] hello-world / sonnet_minimal_none_none_base #2
@@ -164,7 +165,7 @@ The status label reflects the failure class (e.g., `PASS`, `TASK`, `PROVIDER`, `
 
 With `-v`/`--verbose`, each line includes a progress counter, timing, and per-trial stats:
 
-```
+```text
   [1/250] [PASS] hello-world / sonnet_minimal_none_none_base #0  (12.3s | 3 turns | 2 tools | 2.1k tok)  [1P/0F]
   [2/250] [PASS] hello-world / sonnet_minimal_none_none_base #1  (11.8s | 3 turns | 2 tools | 1.9k tok)  [2P/0F]
   [3/250] [TASK] hello-world / sonnet_minimal_none_none_base #2  (15.1s | 5 turns | 4 tools | 3.2k tok)  [2P/1F]

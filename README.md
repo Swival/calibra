@@ -80,7 +80,7 @@ repeat = 3
 timeout_s = 120
 
 [session]
-allowed_commands = ["python", "uv"]
+commands = ["python", "uv"]
 
 [[matrix.model]]
 provider = "anthropic"
@@ -160,7 +160,7 @@ calibra web build <results_dir>        # export static HTML
 
 ## Task Format
 
-```
+```text
 tasks/my-task/
   task.md       # prompt sent to the agent (required)
   env/          # starter workspace files (required)
