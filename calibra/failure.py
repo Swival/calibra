@@ -32,12 +32,13 @@ def classify_failure(
     verified: bool | None = None,
 ) -> str | None:
     if error is None and not timed_out:
-        if report and report.get("result", {}).get("outcome") == "error":
+        outcome = report.get("result", {}).get("outcome") if report else None
+        if outcome == "error":
             stats = report.get("stats", {})
             if stats.get("tool_calls_failed", 0) > 0:
                 return FailureClass.TOOL.value
             return FailureClass.TASK.value
-        if report and report.get("result", {}).get("outcome") == "exhausted":
+        if outcome == "exhausted":
             return FailureClass.TASK.value
         if verified is False:
             return FailureClass.TASK.value

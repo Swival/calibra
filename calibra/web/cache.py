@@ -18,28 +18,30 @@ class CampaignIndex:
 
     @property
     def n_variants(self) -> int:
-        if self.summary and "variants" in self.summary:
-            return len(self.summary["variants"])
+        variants = self.summary.get("variants") if self.summary else None
+        if variants is not None:
+            return len(variants)
         return 0
 
     @property
     def n_tasks(self) -> int:
-        if self.summary and "trials" in self.summary:
-            return len({t["task"] for t in self.summary["trials"]})
+        trials = self.summary.get("trials") if self.summary else None
+        if trials is not None:
+            return len({t["task"] for t in trials})
         return 0
 
     @property
     def n_trials(self) -> int:
-        if self.summary and "trials" in self.summary:
-            return len(self.summary["trials"])
+        trials = self.summary.get("trials") if self.summary else None
+        if trials is not None:
+            return len(trials)
         return len(self.trial_files)
 
     @property
     def pass_rate(self) -> float | None:
-        if self.summary and "variants" in self.summary:
-            variants = self.summary["variants"]
-            if variants:
-                return weighted_pass_rate(variants)
+        variants = self.summary.get("variants") if self.summary else None
+        if variants:
+            return weighted_pass_rate(variants)
         return None
 
 
