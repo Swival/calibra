@@ -166,6 +166,7 @@ _CLI_FLAG_MAP = {
     "yolo": "--yolo",
     "no_skills": "--no-skills",
     "no_instructions": "--no-instructions",
+    "oneshot_commands": "--oneshot-commands",
 }
 _CLI_VALUE_MAP = {
     "max_output_tokens": "--max-output-tokens",
@@ -175,6 +176,8 @@ _CLI_VALUE_MAP = {
     "base_url": "--base-url",
     "max_context_tokens": "--max-context-tokens",
     "seed": "--seed",
+    "trace_dir": "--trace-dir",
+    "command_middleware": "--command-middleware",
 }
 _CLI_REPEAT_MAP = {
     "skills_dir": "--skills-dir",

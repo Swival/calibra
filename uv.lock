@@ -191,7 +191,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "matplotlib", marker = "extra == 'charts'" },
     { name = "rich" },
-    { name = "swival", specifier = ">=0.10.13" },
+    { name = "swival", specifier = ">=0.11.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.41.0" },
 ]
 provides-extras = ["charts"]
@@ -948,7 +948,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.83.1"
+version = "1.83.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -964,9 +964,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/a8/cbe37fbb740029205b5d323e21847ed7c7fcacbdffe6225b188fed8a930a/litellm-1.83.1.tar.gz", hash = "sha256:a0fa79b3010b97da1b40fb91adf9097d4f2d6f9b01d13a8efeff82381521430b", size = 17336970, upload-time = "2026-04-03T04:46:16.024Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/c4/30469c06ae7437a4406bc11e3c433cfd380a6771068cca15ea918dcd158f/litellm-1.83.4.tar.gz", hash = "sha256:6458d2030a41229460b321adee00517a91dbd8e63213cc953d355cb41d16f2d4", size = 17733899, upload-time = "2026-04-07T04:33:47.445Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/ee/8dca6781464160a8ad856fb8d2e89ac1d918731323d5523b681f3c2ccc92/litellm-1.83.1-py3-none-any.whl", hash = "sha256:2becb86c60e4d9738d321e563dc0a1bf4712f8f725c4d6e9d76a1f49a246bc42", size = 15615111, upload-time = "2026-04-03T04:46:13.074Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/bd/df19d3f8f6654535ee343a341fd921f81c411abf601a53e3eaef58129b02/litellm-1.83.4-py3-none-any.whl", hash = "sha256:17d7b4d48d47aca988ea4f762ddda5e7bd72cda3270192b22813d0330869d7b4", size = 16015555, upload-time = "2026-04-07T04:33:44.268Z" },
 ]
 
 [[package]]
@@ -1930,7 +1930,7 @@ wheels = [
 
 [[package]]
 name = "swival"
-version = "0.10.13"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -1946,9 +1946,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/06/aa/776fa1349bc932368a934c3a23dc1f33d0230015ae433d427c8d5c0f098f/swival-0.10.13.tar.gz", hash = "sha256:2bcf999adaf9ce6016a66e179b006533087200face307d3fff5d2ad18c3031ff", size = 459126, upload-time = "2026-04-07T01:27:03.243Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/ec/1f4c29466fad0372c01ca5adb5a6ca2a1fd8472312e03ce2b63b0c6076b2/swival-0.11.0.tar.gz", hash = "sha256:eec2eeba0760ed2f6f6128c5a60cd82da59422f308c500f074da34a0e014a77b", size = 482538, upload-time = "2026-04-09T12:07:54.623Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fc/ff/88caf030395c62b358508cf223305d0796a04f9afa246eedacafb0bb1ec6/swival-0.10.13-py3-none-any.whl", hash = "sha256:aa233e8e21da6107e3fbb88c3bd63a3432990cc72767c0f24070d7af0e79148e", size = 222061, upload-time = "2026-04-07T01:27:04.5Z" },
+    { url = "https://files.pythonhosted.org/packages/de/fa/38d8384c4693f8e0499fc16de8f68e071f7c3ada365411d69e7a85fc943b/swival-0.11.0-py3-none-any.whl", hash = "sha256:65f68eea9ff55eee1631a15568af1193f0f2d2ae7fc4b3b87fb4f2201934ff3b", size = 232375, upload-time = "2026-04-09T12:07:51.423Z" },
 ]
 
 [[package]]
