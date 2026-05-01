@@ -48,7 +48,7 @@ def classify_failure(
         return FailureClass.TIMEOUT.value
 
     if error is not None:
-        if isinstance(error, (OSError, PermissionError)):
+        if isinstance(error, OSError):
             return FailureClass.INFRA.value
 
         msg = str(error).lower()
