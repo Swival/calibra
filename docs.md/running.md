@@ -149,7 +149,7 @@ The CLI invocation includes `--report` (to get the full JSON report with timelin
 
 To prevent user or project config from leaking into trials, Calibra sets `XDG_CONFIG_HOME` to an empty temp directory (preventing `~/.config/swival/config.toml` from loading), deletes any `swival.toml` that may have been copied from the task's `env/` or overlay, and passes `--no-mcp` unless the variant has explicit MCP config.
 
-After the subprocess completes, Calibra reads the report JSON, determines `verified` from the last review event in the timeline (exit 0 = true, exit 1 = false, exit 2+ = null), and classifies failures using the report data first with a stderr fallback. `verify.sh` is skipped in reviewer mode.
+After the subprocess completes, Calibra reads the report JSON, determines `verified` from the last review event in the timeline (exit 0 = true, exit 1 = false, exit 2+ = null), and classifies failures using the report data first with a stderr fallback. `verify.sh` is skipped in reviewer mode by default (see `[reviewer] verify`).
 
 ## Monitoring progress
 

@@ -10,6 +10,7 @@ tasks/my-task/
   env/          # Initial workspace files (required, can be empty)
   verify.sh     # Verification script (optional)
   meta.toml     # Task metadata (optional)
+  criteria.md   # Reviewer criteria (optional)
 ```
 
 ## task.md: the prompt
@@ -85,7 +86,7 @@ The entire `env/` tree is copied into a temporary directory for each trial, so t
 
 An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout; if the timeout expires or the script can't be executed (e.g., missing interpreter), it counts as a fail. The script's stdout and stderr are captured but not stored in the report. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
 
-When a campaign has a `[reviewer]` configured, `verify.sh` is skipped - the reviewer determines pass/fail instead. Tasks can include both `verify.sh` and be used with reviewer campaigns; the campaign config controls which verification method is used.
+When a campaign has a `[reviewer]` configured, `verify.sh` is skipped by default — the reviewer determines pass/fail. Set `verify = true` under `[reviewer]` to run both; both must pass for a trial to be verified.
 
 Make sure the script is executable:
 

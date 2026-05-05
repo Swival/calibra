@@ -132,11 +132,18 @@ def setup_workspace(spec: TrialSpec, variant: Variant) -> Path:
     return tmpdir
 
 
-def run_verify(verify_script: Path, workdir: Path) -> bool:
+def run_verify(verify_script: Path, workdir: Path, spec: "TrialSpec | None" = None) -> bool:
+    env = os.environ.copy()
+    if spec:
+        dims = spec.variant.dim_labels()
+        for key, val in dims.items():
+            env[f"CALIBRA_{key.upper()}"] = val
+        env["CALIBRA_VARIANT"] = spec.variant.label
     try:
         result = subprocess.run(
             [str(verify_script)],
             cwd=str(workdir),
+            env=env,
             timeout=30,
             capture_output=True,
         )
@@ -178,6 +185,7 @@ _CLI_VALUE_MAP = {
     "seed": "--seed",
     "trace_dir": "--trace-dir",
     "command_middleware": "--command-middleware",
+    "aws_profile": "--aws-profile",
 }
 _CLI_REPEAT_MAP = {
     "skills_dir": "--skills-dir",
@@ -364,7 +372,7 @@ def run_single_trial(
 
         verified = None
         if spec.task.verify_script:
-            verified = run_verify(spec.task.verify_script, tmpdir)
+            verified = run_verify(spec.task.verify_script, tmpdir, spec)
 
         failure_class = classify_failure(None, report, False, verified=verified)
 
@@ -415,6 +423,11 @@ def run_trial_cli(
     env, xdg_dir = _make_isolated_env()
     report_path = tmpdir / ".calibra-report.json"
 
+    reviewer_command = campaign.reviewer.command
+    criteria_path = spec.task.env_dir.parent / "criteria.md"
+    if criteria_path.is_file():
+        reviewer_command += f" --verify {criteria_path}"
+
     (tmpdir / "swival.toml").unlink(missing_ok=True)
 
     try:
@@ -435,7 +448,7 @@ def run_trial_cli(
             "--report",
             str(report_path),
             "--reviewer",
-            campaign.reviewer.command,
+            reviewer_command,
             "--max-review-rounds",
             str(campaign.reviewer.max_rounds),
         ]
@@ -446,6 +459,12 @@ def run_trial_cli(
             argv.extend(["--mcp-config", str(mcp_file)])
         else:
             argv.append("--no-mcp")
+
+        if spec.variant.skills.skills_dirs:
+            for skills_dir in spec.variant.skills.skills_dirs:
+                argv.extend(["--skills-dir", str(skills_dir)])
+        else:
+            argv.append("--no-skills")
 
         yolo, session_opts = _resolve_yolo(merged_session_opts or {})
         if yolo:
@@ -483,6 +502,13 @@ def run_trial_cli(
         if report and campaign.reviewer:
             verdict = _reviewer_verdict(report)
             verified = verdict
+
+        if spec.task.verify_script and not timed_out and campaign.reviewer.verify:
+            script_passed = run_verify(spec.task.verify_script, tmpdir, spec)
+            if verified is None:
+                verified = script_passed
+            else:
+                verified = verified and script_passed
 
         failure_class = _classify_cli_failure(exit_code, stderr_text, report, timed_out, verified)
 

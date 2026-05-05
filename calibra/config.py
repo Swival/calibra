@@ -24,6 +24,7 @@ class ConfigError(Exception):
 class ReviewerConfig:
     command: str
     max_rounds: int = 5
+    verify: bool = False
 
 
 @dataclass
@@ -415,8 +416,12 @@ def load_campaign(path: str | Path) -> Campaign:
                 raise ConfigError(f"[reviewer] command executable not found: {executable}")
             resolved_exe = str(candidate)
 
+        rev_verify = reviewer_raw.get("verify", False)
+        if not isinstance(rev_verify, bool):
+            raise ConfigError("[reviewer] verify must be a boolean")
+
         rev_command_resolved = shlex.join([resolved_exe] + tokens[1:])
-        reviewer = ReviewerConfig(command=rev_command_resolved, max_rounds=rev_max_rounds)
+        reviewer = ReviewerConfig(command=rev_command_resolved, max_rounds=rev_max_rounds, verify=rev_verify)
 
     config_hash = compute_config_hash(raw)
 
