@@ -16,7 +16,7 @@
 - Omitted matrix dimensions default to `agent_instructions=default`, `skills=none`, `mcp=none`, and `environment=base`. These defaults affect variant names and output paths.
 - Tasks are only discovered one level deep under `tasks_dir`, sorted alphabetically. Every direct child directory must contain non-empty `task.md`, `env/`, and executable `verify.sh` if present.
 - Trial workspaces are assembled in a fixed order: copy `env/`, then apply environment overlay, then copy `AGENTS.md`. Later steps override earlier files on conflicts.
-- With `[reviewer]`, Calibra runs `swival` CLI instead of Session mode and skips `verify.sh`. `verified` comes from reviewer outcomes, and reports add `review_rounds` plus `reviewer_verdict`.
+- With `[reviewer]`, Calibra runs `swival` CLI instead of Session mode and skips `verify.sh` by default. Set `verify = true` under `[reviewer]` to run both; both must pass for a trial to be verified. Reports add `review_rounds` plus `reviewer_verdict`. Verify scripts receive `CALIBRA_*` environment variables (one per matrix dimension, plus `CALIBRA_VARIANT` for the full label).
 - `--resume` only skips a trial when `config_hash`, `task`, `variant`, and `repeat` all match the existing JSON. Config changes intentionally invalidate prior results.
 - Trial JSON lives at `results/<campaign>/<task>/<variant>_<repeat>.json`. Analysis writes `summary.json`, `summary.md`, and `summary.csv`, and web/cache code depends on that layout.
 - Every trial report must include a `calibra` block with `config_hash`, `task`, `variant`, `repeat`, `trial_seed`, `wall_time_s`, and `attempts`. Other modules read those fields back during resume, analysis, and web rendering.

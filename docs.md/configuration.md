@@ -176,17 +176,19 @@ Each variant gets a label by joining dimension labels with underscores in a fixe
 
 ## [reviewer] section
 
-Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer receives the task prompt (`task.md`) as its goal — the same prompt the agent was given — so it can judge whether the agent's work satisfies the original task. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped - the reviewer determines pass/fail.
+Enables Swival's reviewer feature. When configured, Calibra runs trials via the `swival` CLI instead of the Session API, passing `--reviewer` and `--report` flags. The reviewer receives the task prompt (`task.md`) as its goal — the same prompt the agent was given — so it can judge whether the agent's work satisfies the original task. The reviewer command runs after each agent answer; exit 0 means accept, exit 1 means retry with feedback, exit 2+ means error (treated as unverified). When a reviewer is active, `verify.sh` is skipped by default; set `verify = true` to run both (both must pass). If a task has a `criteria.md`, Calibra appends `--verify <path>` to the reviewer command so the reviewer receives the pass criteria.
 
 | Field        | Type   | Default    | Description                                              |
 | ------------ | ------ | ---------- | -------------------------------------------------------- |
 | `command`    | string | *required* | Shell command for the reviewer executable                |
 | `max_rounds` | int    | `5`        | Maximum retry rounds (0 = run reviewer once, no retries) |
+| `verify`     | bool   | `false`    | Also run `verify.sh`; both must pass for `verified=true` |
 
 ```toml
 [reviewer]
 command = "./review.sh"
 max_rounds = 3
+verify = true
 ```
 
 The `command` is parsed with `shlex.split`, so arguments with spaces must be quoted. The first token is resolved as an executable (via `which` or relative to the config file directory). If the `[reviewer]` section is present, `command` must be provided - an empty section is an error.
