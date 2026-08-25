@@ -216,7 +216,7 @@ class TestTaskMatrix:
 
     def test_plotly_loaded(self, client, drilldown_dir):
         r = client.get(f"/campaign/{drilldown_dir.name}/tasks")
-        assert "plotly-3.4.0.min.js" in r.text
+        assert "plotly-4.0.0.min.js" in r.text
 
     def test_breadcrumb(self, client, drilldown_dir):
         r = client.get(f"/campaign/{drilldown_dir.name}/tasks")
@@ -294,7 +294,7 @@ class TestVariantDetail:
 
     def test_plotly_loaded(self, client, drilldown_dir):
         r = client.get(f"/campaign/{drilldown_dir.name}/variant/va")
-        assert "plotly-3.4.0.min.js" in r.text
+        assert "plotly-4.0.0.min.js" in r.text
 
 
 class TestTrialInspector:

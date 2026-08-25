@@ -184,7 +184,7 @@ class TestServerCharts:
     def test_plotly_loaded(self, multi_variant_dir):
         client = _make_client(multi_variant_dir)
         r = client.get(f"/campaign/{multi_variant_dir.name}")
-        assert "plotly-3.4.0.min.js" in r.text
+        assert "plotly-4.0.0.min.js" in r.text
 
     def test_chart_containers_present(self, multi_variant_dir):
         client = _make_client(multi_variant_dir)
@@ -330,11 +330,11 @@ class TestExportKPIs:
 class TestExportCharts:
     def test_plotly_script_tag(self, multi_variant_dir):
         html, _ = _export_campaign_html(multi_variant_dir)
-        assert "plotly-3.4.0.min.js" in html
+        assert "plotly-4.0.0.min.js" in html
 
     def test_plotly_vendored_asset(self, multi_variant_dir):
         _, out = _export_campaign_html(multi_variant_dir)
-        assert (out / "static" / "vendor" / "plotly-3.4.0.min.js").is_file()
+        assert (out / "static" / "vendor" / "plotly-4.0.0.min.js").is_file()
 
     def test_chart_containers_in_export(self, multi_variant_dir):
         html, _ = _export_campaign_html(multi_variant_dir)

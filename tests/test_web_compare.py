@@ -233,7 +233,7 @@ class TestComparePage:
 
     def test_plotly_loaded(self, client):
         r = client.get("/compare?a=camp-a&b=camp-b")
-        assert "plotly-3.4.0.min.js" in r.text
+        assert "plotly-4.0.0.min.js" in r.text
 
     def test_dropdowns_preselected(self, client):
         r = client.get("/compare?a=camp-a&b=camp-b")

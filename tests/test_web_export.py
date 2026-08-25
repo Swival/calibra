@@ -168,7 +168,7 @@ class TestBuildStaticSite:
     def test_copies_static_assets(self, results_dir):
         out = results_dir / "web"
         build_static_site(results_dir, output_dir=out)
-        assert (out / "static" / "vendor" / "htmx-2.0.8.min.js").is_file()
+        assert (out / "static" / "vendor" / "htmx-2.0.10.min.js").is_file()
         assert (out / "static" / "style.css").is_file()
 
     def test_campaigns_page_lists_campaign(self, results_dir):
