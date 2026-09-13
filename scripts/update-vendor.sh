@@ -4,9 +4,9 @@ set -euo pipefail
 VENDOR_DIR="calibra/web/static/vendor"
 
 TAILWIND_VERSION="4.3.3"
-PLOTLY_VERSION="4.0.0"
+PLOTLY_VERSION="4.1.0"
 HTMX_VERSION="2.0.10"
-LUCIDE_VERSION="1.34.0"
+LUCIDE_VERSION="1.45.0"
 
 download() {
   local file="$1" url="$2" expected="$3"
@@ -34,7 +34,7 @@ download "tailwindcss-browser-${TAILWIND_VERSION}.js" \
 
 download "plotly-${PLOTLY_VERSION}.min.js" \
   "https://cdn.plot.ly/plotly-${PLOTLY_VERSION}.min.js" \
-  "14461f3b4c91c8bb590a99d6d03c3fd031ca40eec07ebab79a5e3eac107cd7ca"
+  "03e18091beef5647aaf9e15f526981f325d760bb6b784fe0672a1e20585272cf"
 
 download "htmx-${HTMX_VERSION}.min.js" \
   "https://unpkg.com/htmx.org@${HTMX_VERSION}/dist/htmx.min.js" \
@@ -42,7 +42,7 @@ download "htmx-${HTMX_VERSION}.min.js" \
 
 download "lucide-${LUCIDE_VERSION}.min.js" \
   "https://unpkg.com/lucide@${LUCIDE_VERSION}/dist/umd/lucide.min.js" \
-  "381de5c07d1fa81c3430b04d66a3d710b622c1d702fadd0a0448470d9493b6f1"
+  "1876a30f8dd16a23af5ee36d503460202b35af298973e28e194014b79c51fb13"
 
 echo "All downloads verified. Files in $VENDOR_DIR:"
 ls -lh "$VENDOR_DIR"
