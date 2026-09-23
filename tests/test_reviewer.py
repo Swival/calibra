@@ -30,6 +30,7 @@ from calibra.runner import (
     _make_isolated_env,
     _reviewer_verdict,
     _session_opts_to_cli_args,
+    _write_cli_config,
     _write_cli_mcp_config,
     run_trial_cli,
     setup_workspace,
@@ -221,6 +222,12 @@ class TestSessionOptsToCli:
         idx = args.index("--temperature")
         assert args[idx + 1] == "0.7"
 
+    def test_swival_1_0_45_value_options(self):
+        args = _session_opts_to_cli_args(
+            {"provider_timeout": 120, "initial_tool_choice": "required"}
+        )
+        assert args == ["--provider-timeout", "120", "--initial-tool-choice", "required"]
+
     def test_no_read_guard(self):
         args = _session_opts_to_cli_args({"read_guard": False})
         assert "--no-read-guard" in args
@@ -280,6 +287,17 @@ class TestSessionOptsToCli:
         args = _session_opts_to_cli_args({"seed": 42})
         idx = args.index("--seed")
         assert args[idx + 1] == "42"
+
+
+class TestWriteCliConfig:
+    def test_writes_deferred_mcp_setting(self, tmp_path):
+        _write_cli_config({"defer_mcp_schemas": False}, tmp_path)
+        config = tmp_path / "swival" / "config.toml"
+        assert config.read_text() == "defer_mcp_schemas = false\n"
+
+    def test_skips_config_without_deferred_mcp_setting(self, tmp_path):
+        _write_cli_config({}, tmp_path)
+        assert list(tmp_path.iterdir()) == []
 
 
 class TestWriteCliMcpConfig:

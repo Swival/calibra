@@ -10,6 +10,7 @@ import os
 import shlex
 import shutil
 import tomllib
+import types
 import typing
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -168,7 +169,7 @@ def _get_session_param_types() -> dict[str, type | tuple]:
 
 def _unwrap_optional(tp):
     origin = get_origin(tp)
-    if origin is Union:
+    if origin in (Union, types.UnionType):
         args = get_args(tp)
         non_none = [a for a in args if a is not type(None)]
         if len(non_none) == 1:
@@ -180,7 +181,7 @@ def _type_matches(value, expected_type) -> bool:
     if expected_type is type(None):
         return value is None
     origin = get_origin(expected_type)
-    if origin is Union:
+    if origin in (Union, types.UnionType):
         return any(_type_matches(value, a) for a in get_args(expected_type))
     if origin is list:
         if not isinstance(value, list):

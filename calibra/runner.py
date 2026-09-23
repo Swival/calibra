@@ -175,6 +175,8 @@ _CLI_VALUE_MAP = {
     "api_key": "--api-key",
     "base_url": "--base-url",
     "max_context_tokens": "--max-context-tokens",
+    "provider_timeout": "--provider-timeout",
+    "initial_tool_choice": "--initial-tool-choice",
     "seed": "--seed",
     "trace_dir": "--trace-dir",
     "command_middleware": "--command-middleware",
@@ -193,7 +195,18 @@ _CLI_SKIP = {
     "model",
     "max_turns",
     "mcp_servers",
+    "defer_mcp_schemas",
 }
+
+
+def _write_cli_config(opts: dict, xdg_dir: Path):
+    if "defer_mcp_schemas" not in opts:
+        return
+    config_dir = xdg_dir / "swival"
+    config_dir.mkdir()
+    config_path = config_dir / "config.toml"
+    value = str(opts["defer_mcp_schemas"]).lower()
+    config_path.write_text(f"defer_mcp_schemas = {value}\n")
 
 
 def _session_opts_to_cli_args(opts: dict) -> list[str]:
@@ -418,6 +431,9 @@ def run_trial_cli(
     (tmpdir / "swival.toml").unlink(missing_ok=True)
 
     try:
+        yolo, session_opts = _resolve_yolo(merged_session_opts or {})
+        _write_cli_config(session_opts, xdg_dir)
+
         argv = [
             "swival",
             spec.task.prompt,
@@ -447,7 +463,6 @@ def run_trial_cli(
         else:
             argv.append("--no-mcp")
 
-        yolo, session_opts = _resolve_yolo(merged_session_opts or {})
         if yolo:
             argv.append("--yolo")
         argv.extend(_session_opts_to_cli_args(session_opts))
