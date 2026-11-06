@@ -287,7 +287,7 @@ def export_diff(path_a: Path, path_b: Path, output: Path) -> Path:
     label_b = path_b.name
     diff = build_trial_diff(report_a, report_b, label_a, label_b)
 
-    inline_tailwind_js = (STATIC_DIR / "vendor" / "tailwindcss-browser-4.3.3.js").read_text()
+    inline_tailwind_js = (STATIC_DIR / "vendor" / "tailwindcss-browser-4.3.4.js").read_text()
     inline_htmx_js = (STATIC_DIR / "vendor" / "htmx-2.0.11.min.js").read_text()
     inline_style_css = (STATIC_DIR / "style.css").read_text()
 
