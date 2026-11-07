@@ -104,6 +104,7 @@ class Campaign:
     session_options: dict = field(default_factory=dict)
     reviewer: ReviewerConfig | None = None
     config_hash: str = ""
+    verify_timeout_s: int = 30
 
 
 def _require(d: dict, key: str, context: str) -> object:
@@ -261,6 +262,15 @@ def load_campaign(path: str | Path) -> Campaign:
     repeat = camp.get("repeat", 1)
     max_turns = camp.get("max_turns", 250)
     timeout_s = camp.get("timeout_s", 300)
+    verify_timeout_s = camp.get("verify_timeout_s", 30)
+    if (
+        not isinstance(verify_timeout_s, int)
+        or isinstance(verify_timeout_s, bool)
+        or verify_timeout_s <= 0
+    ):
+        raise ConfigError(
+            f"[campaign] verify_timeout_s must be a positive integer, got {verify_timeout_s!r}"
+        )
     seed = camp.get("seed", 42)
     tasks_dir = _resolve(base, _require(camp, "tasks_dir", "[campaign]"))
 
@@ -427,6 +437,7 @@ def load_campaign(path: str | Path) -> Campaign:
         repeat=repeat,
         max_turns=max_turns,
         timeout_s=timeout_s,
+        verify_timeout_s=verify_timeout_s,
         seed=seed,
         tasks_dir=tasks_dir,
         budget=budget,

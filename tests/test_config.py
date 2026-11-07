@@ -257,6 +257,7 @@ agents_md = "agents.md"
     assert campaign.repeat == 1
     assert campaign.max_turns == 250
     assert campaign.timeout_s == 300
+    assert campaign.verify_timeout_s == 30
     assert campaign.seed == 42
     assert campaign.sampling.mode == "full"
     assert campaign.retry.provider == 3
@@ -282,6 +283,35 @@ agents_md = "agents.md"
 """
     config = _write_campaign(tmp_path, toml)
     with pytest.raises(ConfigError, match="Invalid sampling mode"):
+        load_campaign(config)
+
+
+_VERIFY_TIMEOUT_TOML = """\
+[campaign]
+name = "test"
+tasks_dir = "tasks"
+verify_timeout_s = {value}
+
+[[matrix.model]]
+provider = "test"
+model = "m"
+label = "m"
+
+[[matrix.agent_instructions]]
+label = "d"
+agents_md = "agents.md"
+"""
+
+
+def test_verify_timeout(tmp_path):
+    config = _write_campaign(tmp_path, _VERIFY_TIMEOUT_TOML.format(value=900))
+    assert load_campaign(config).verify_timeout_s == 900
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "true", '"60"', "1.5"])
+def test_verify_timeout_invalid(tmp_path, value):
+    config = _write_campaign(tmp_path, _VERIFY_TIMEOUT_TOML.format(value=value))
+    with pytest.raises(ConfigError, match="verify_timeout_s"):
         load_campaign(config)
 
 

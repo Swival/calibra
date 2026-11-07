@@ -30,7 +30,9 @@ from calibra.runner import (
     compute_trial_seed,
     result_exists,
     run_single_trial,
+    run_verify,
     setup_workspace,
+    verify_env,
     trial_report_path,
     write_trial_report,
 )
@@ -350,3 +352,27 @@ def test_verbose_true_injects_verbose_into_session(tmp_path):
 def test_default_no_verbose_in_session(tmp_path):
     kwargs = _run_with_mock_session(tmp_path, {})
     assert "verbose" not in kwargs
+
+
+def test_run_verify_timeout(tmp_path):
+    script = tmp_path / "verify.sh"
+    script.write_text("#!/bin/sh\nsleep 2\n")
+    script.chmod(0o755)
+    assert run_verify(script, tmp_path, timeout_s=1) is False
+    assert run_verify(script, tmp_path, timeout_s=10) is True
+
+
+def test_verify_env_identifies_trial(tmp_path):
+    out = tmp_path / "env.txt"
+    script = tmp_path / "verify.sh"
+    script.write_text(
+        '#!/bin/sh\necho "$CALIBRA_CAMPAIGN $CALIBRA_TASK $CALIBRA_VARIANT $CALIBRA_REPEAT" > "$1"\n'.replace(
+            '"$1"', str(out)
+        )
+    )
+    script.chmod(0o755)
+    spec = TrialSpec(task=_task(tmp_path), variant=_variant(), repeat_index=3, trial_seed=7)
+    env = verify_env(spec, _campaign())
+    assert env["CALIBRA_TRIAL_SEED"] == "7"
+    assert run_verify(script, tmp_path, env=env) is True
+    assert out.read_text().split() == ["test", "hello", spec.variant.label, "3"]

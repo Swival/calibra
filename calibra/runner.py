@@ -132,13 +132,28 @@ def setup_workspace(spec: TrialSpec, variant: Variant) -> Path:
     return tmpdir
 
 
-def run_verify(verify_script: Path, workdir: Path) -> bool:
+def verify_env(spec: TrialSpec, campaign: Campaign) -> dict[str, str]:
+    """Environment for verify.sh, so a verifier can tell which trial it grades."""
+    return {
+        **os.environ,
+        "CALIBRA_CAMPAIGN": campaign.name,
+        "CALIBRA_TASK": spec.task.name,
+        "CALIBRA_VARIANT": spec.variant.label,
+        "CALIBRA_REPEAT": str(spec.repeat_index),
+        "CALIBRA_TRIAL_SEED": str(spec.trial_seed),
+    }
+
+
+def run_verify(
+    verify_script: Path, workdir: Path, timeout_s: int = 30, env: dict[str, str] | None = None
+) -> bool:
     try:
         result = subprocess.run(
             [str(verify_script)],
             cwd=str(workdir),
-            timeout=30,
+            timeout=timeout_s,
             capture_output=True,
+            env=env,
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, OSError):
@@ -377,7 +392,12 @@ def run_single_trial(
 
         verified = None
         if spec.task.verify_script:
-            verified = run_verify(spec.task.verify_script, tmpdir)
+            verified = run_verify(
+                spec.task.verify_script,
+                tmpdir,
+                campaign.verify_timeout_s,
+                env=verify_env(spec, campaign),
+            )
 
         failure_class = classify_failure(None, report, False, verified=verified)
 

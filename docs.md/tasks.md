@@ -83,7 +83,7 @@ The entire `env/` tree is copied into a temporary directory for each trial, so t
 
 ## verify.sh: the verifier
 
-An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout; if the timeout expires or the script can't be executed (e.g., missing interpreter), it counts as a fail. The script's stdout and stderr are captured but not stored in the report. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
+An optional executable shell script that checks whether the agent succeeded. Calibra runs it in the trial's workspace directory after the agent finishes. Exit code 0 means pass, anything else means fail. The script has a 30-second timeout by default (set `verify_timeout_s` in `[campaign]` to change it); if the timeout expires or the script can't be executed (e.g., missing interpreter), it counts as a fail. The script's stdout and stderr are captured but not stored in the report. Calibra sets `CALIBRA_CAMPAIGN`, `CALIBRA_TASK`, `CALIBRA_VARIANT`, `CALIBRA_REPEAT` and `CALIBRA_TRIAL_SEED` in its environment, so a verifier that keeps its own log can say which trial each entry belongs to. If `verify.sh` is not present, the trial won't have a `verified` field and pass rates can't be computed.
 
 When a campaign has a `[reviewer]` configured, `verify.sh` is skipped - the reviewer determines pass/fail instead. Tasks can include both `verify.sh` and be used with reviewer campaigns; the campaign config controls which verification method is used.
 
@@ -135,7 +135,7 @@ assert len(data['results']) > 0
 "
 ```
 
-Use `set -e` when chaining multiple checks so the first failure stops execution. Keep verifiers fast; they have a 30-second timeout. Test your verifier manually before running a campaign. Use `grep -q` for silent matching (no output, just exit code). And avoid checking for exact formatting when the semantics are what actually matter.
+Use `set -e` when chaining multiple checks so the first failure stops execution. Keep verifiers fast; they have a 30-second timeout unless the campaign raises `verify_timeout_s`. Test your verifier manually before running a campaign. Use `grep -q` for silent matching (no output, just exit code). And avoid checking for exact formatting when the semantics are what actually matter.
 
 ## meta.toml: task metadata
 

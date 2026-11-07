@@ -139,7 +139,7 @@ For each trial, Calibra sets up the workspace as described above, then computes 
 
 When no `[reviewer]` is configured, Calibra creates a Swival session with the variant's model, skills, and MCP config, plus any [session options](configuration.md#session-options) (campaign defaults deep-merged with per-model overrides). When `commands` is set without explicitly setting `yolo`, it defaults to `false` so the allowlist takes effect.
 
-Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
+Calibra runs the agent within the `max_turns` and `timeout_s` limits, then runs `verify.sh` in the workspace if it exists (with a 30-second timeout, or `verify_timeout_s` from `[campaign]`). Any failures are classified, and the trial is retried if the failure class allows it (see [retry config](configuration.md#retry-section)). Finally, the JSON report is written.
 
 ### Reviewer mode
 
